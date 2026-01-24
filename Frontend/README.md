@@ -93,6 +93,38 @@ Replace the hero video URL in `src/components/HeroVideo.jsx`
 ### Content
 Update sample data in `src/data/events.js` and `src/data/gallery.js`
 
+## 🚀 Netlify Deployment (CI/CD)
+
+### Automatic Deployment
+
+1. **Connect Repository**
+   - Go to [Netlify](https://app.netlify.com)
+   - Click "Add new site" → "Import an existing project"
+   - Connect your GitHub account
+   - Select `mehedinaeem/JKKNIU-MUNC` repository
+
+2. **Configure Build Settings**
+   - Base directory: `Frontend`
+   - Build command: `npm run build`
+   - Publish directory: `Frontend/dist`
+
+3. **Deploy**
+   - Click "Deploy site"
+   - Netlify will automatically build and deploy
+
+### CI/CD Pipeline
+
+- Every push to `main` triggers automatic deployment
+- Pull requests get deploy previews
+- Build status shown in GitHub
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `netlify.toml` | Build configuration, redirects, headers |
+| `public/_redirects` | SPA routing fallback |
+
 ## 📄 License
 
 MIT License - Free to use for the JKKNIU MUN Club

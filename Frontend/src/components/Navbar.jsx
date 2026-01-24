@@ -36,24 +36,22 @@ const Navbar = () => {
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                    ? 'bg-white/95 backdrop-blur-md shadow-soft py-3'
-                    : 'bg-transparent py-5'
+                ? 'bg-white/95 backdrop-blur-md shadow-soft py-3'
+                : 'bg-transparent py-5'
                 }`}
         >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <Link to="/" className="flex items-center space-x-3 group">
-                        {/* Logo Icon - UN-style globe */}
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${isScrolled ? 'bg-primary-600' : 'bg-white'
+                        {/* MUN Club Logo */}
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center overflow-hidden transition-all duration-300 ${isScrolled ? 'bg-white' : 'bg-white'
                             } group-hover:scale-105`}>
-                            <svg
-                                className={`w-7 h-7 ${isScrolled ? 'text-white' : 'text-primary-600'}`}
-                                fill="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
-                            </svg>
+                            <img
+                                src="/mun-logo.png"
+                                alt="JKKNIU MUN Club Logo"
+                                className="w-full h-full object-contain p-1"
+                            />
                         </div>
                         {/* Logo Text */}
                         <div className="hidden sm:block">
@@ -93,8 +91,8 @@ const Navbar = () => {
                         <Link
                             to="/contact"
                             className={`px-5 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:-translate-y-0.5 ${isScrolled
-                                    ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-soft hover:shadow-glow'
-                                    : 'bg-accent-400 text-primary-900 hover:bg-accent-300 shadow-soft'
+                                ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-soft hover:shadow-glow'
+                                : 'bg-accent-400 text-primary-900 hover:bg-accent-300 shadow-soft'
                                 }`}
                         >
                             Join Us
