@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom';
+import droneVideo from '../assets/JKKNIU-Drone-Shoot.mp4';
 
 /**
  * HeroVideo Component
  * Full-screen hero section with background video, dark overlay, and animated content
  */
 const HeroVideo = () => {
-    // Demo video URL - using a royalty-free video from Pexels CDN
-    const demoVideoUrl = "https://videos.pexels.com/video-files/3129671/3129671-uhd_2560_1440_30fps.mp4";
-
     return (
         <section className="relative h-screen w-full overflow-hidden">
             {/* Background Video */}
@@ -17,9 +15,8 @@ const HeroVideo = () => {
                 muted
                 playsInline
                 className="absolute inset-0 w-full h-full object-cover"
-                poster="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1920"
             >
-                <source src={demoVideoUrl} type="video/mp4" />
+                <source src={droneVideo} type="video/mp4" />
                 {/* Fallback for browsers that don't support video */}
                 Your browser does not support the video tag.
             </video>
