@@ -1,0 +1,8 @@
+.history-timeline { position: relative; border-left: 2px solid #dbeafe; margin-left: auto; padding-left: 1.75rem; }
+.history-timeline li { position: relative; margin-bottom: 1.5rem; }
+.history-timeline li:last-child { margin-bottom: 0; }
+.history-marker { position: absolute; top: 1.75rem; left: -2.3rem; height: 1rem; width: 1rem; border: 3px solid white; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 0 1px #fde68a; }
+.history-pending { opacity: 0; transform: translateY(20px); }
+.history-visible { animation: history-reveal 500ms ease-out both; animation-delay: var(--milestone-delay); }
+@keyframes history-reveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .history-timeline li { opacity: 1; transform: none; animation: none; } }

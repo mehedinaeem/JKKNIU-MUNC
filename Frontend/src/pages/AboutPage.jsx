@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import ClubHistory from '../components/ClubHistory';
 
 /**
  * AboutPage Component
@@ -43,16 +44,6 @@ const AboutPage = () => {
             image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
             department: "English",
         },
-    ];
-
-    // Timeline milestones
-    const milestones = [
-        { year: "2015", event: "JKKNIU MUN Club Founded", description: "Started with 20 founding members" },
-        { year: "2016", event: "First National Conference", description: "Hosted JKKNIU MUN 2016 with 50 delegates" },
-        { year: "2018", event: "Regional Recognition", description: "Won Best Delegation at National MUN Dhaka" },
-        { year: "2020", event: "Virtual MUN Adaptation", description: "Successfully transitioned to online conferences" },
-        { year: "2022", event: "500+ Member Milestone", description: "Grew to over 500 active members" },
-        { year: "2025", event: "10 Year Anniversary", description: "Celebrating a decade of excellence" },
     ];
 
     return (
@@ -112,75 +103,7 @@ const AboutPage = () => {
                 </div>
             </section>
 
-            {/* History/Story Section */}
-            <section className="section-container bg-gray-50">
-                <div className="text-center mb-12">
-                    <h2 className="section-title">Our Story</h2>
-                    <p className="section-subtitle">
-                        A decade of empowering future diplomats and global leaders.
-                    </p>
-                </div>
-
-                <div className="max-w-4xl mx-auto">
-                    <div className="grid gap-8">
-                        <p className="text-gray-600 leading-relaxed text-lg">
-                            The JKKNIU Model United Nations Club was founded in 2015 by a group of passionate
-                            students who believed in the power of diplomatic education. Starting with just 20
-                            members in a small classroom, we have grown into one of the most active and
-                            recognized MUN clubs in Bangladesh.
-                        </p>
-                        <p className="text-gray-600 leading-relaxed text-lg">
-                            Over the years, our members have represented JKKNIU at national and international
-                            conferences, winning numerous awards and bringing recognition to our university.
-                            We have hosted over 15 conferences, trained hundreds of delegates, and built a
-                            strong alumni network of professionals working in diplomacy, law, journalism,
-                            and public service.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* Timeline Section */}
-            <section className="section-container">
-                <div className="text-center mb-12">
-                    <h2 className="section-title">Our Journey</h2>
-                    <p className="section-subtitle">
-                        Key milestones that shaped our club's history.
-                    </p>
-                </div>
-
-                <div className="max-w-4xl mx-auto">
-                    <div className="relative">
-                        {/* Timeline Line */}
-                        <div className="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-primary-200 transform md:-translate-x-1/2" />
-
-                        {/* Timeline Items */}
-                        {milestones.map((milestone, index) => (
-                            <div
-                                key={index}
-                                className={`relative flex items-start gap-6 mb-8 ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'
-                                    }`}
-                            >
-                                {/* Dot */}
-                                <div className="absolute left-4 md:left-1/2 w-4 h-4 bg-primary-600 rounded-full transform -translate-x-1/2 z-10 border-4 border-white" />
-
-                                {/* Content */}
-                                <div className={`ml-12 md:ml-0 md:w-1/2 ${index % 2 === 0 ? 'md:pr-12 md:text-right' : 'md:pl-12'}`}>
-                                    <div className="card">
-                                        <span className="inline-block px-3 py-1 bg-primary-100 text-primary-600 text-sm font-semibold rounded-full mb-2">
-                                            {milestone.year}
-                                        </span>
-                                        <h3 className="font-heading font-semibold text-lg text-primary-700 mb-1">
-                                            {milestone.event}
-                                        </h3>
-                                        <p className="text-gray-600 text-sm">{milestone.description}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            <ClubHistory />
 
             {/* Executive Committee Section */}
             <section className="section-container bg-gray-50">

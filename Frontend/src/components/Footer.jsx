@@ -47,7 +47,7 @@ const Footer = () => {
         },
         {
             name: 'Email',
-            url: 'mailto:mun@jkkniu.edu.bd',
+            url: 'mailto:jkkniumunclub@gmail.com',
             icon: (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20,4H4C2.895,4,2,4.895,2,6v12c0,1.105,0.895,2,2,2h16c1.105,0,2-0.895,2-2V6C22,4.895,21.105,4,20,4z M20,8.236l-8,4.882 L4,8.236V6h16V8.236z" />
@@ -114,7 +114,7 @@ const Footer = () => {
                                 <svg className="w-5 h-5 text-accent-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
-                                <span>mun@jkkniu.edu.bd</span>
+                                <a href="mailto:jkkniumunclub@gmail.com" className="hover:text-white transition-colors">jkkniumunclub@gmail.com</a>
                             </li>
                             <li className="flex items-center space-x-3">
                                 <svg className="w-5 h-5 text-accent-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import HeroVideo from '../components/HeroVideo';
+import { organizationInfo } from '../data/organization';
 
 /**
  * HomePage Component
@@ -69,7 +70,7 @@ const HomePage = () => {
         { number: "500+", label: "Active Members" },
         { number: "15+", label: "Conferences Hosted" },
         { number: "50+", label: "Awards Won" },
-        { number: "10+", label: "Years of Excellence" },
+        { number: organizationInfo.foundedYear, label: "Founded" },
     ];
 
     return (
@@ -117,7 +118,7 @@ const HomePage = () => {
                             className="rounded-2xl shadow-soft-lg"
                         />
                         <div className="absolute -bottom-6 -left-6 bg-primary-600 text-white p-6 rounded-2xl shadow-lg">
-                            <p className="font-heading font-bold text-3xl">Since 2015</p>
+                            <p className="font-heading font-bold text-3xl">Since {organizationInfo.foundedYear}</p>
                             <p className="text-sm opacity-90">Building Future Leaders</p>
                         </div>
                     </div>

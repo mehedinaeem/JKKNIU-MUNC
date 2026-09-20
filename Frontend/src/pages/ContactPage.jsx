@@ -47,7 +47,7 @@ const ContactPage = () => {
                 </svg>
             ),
             title: 'Email Us',
-            details: ['mun@jkkniu.edu.bd', 'info.jkkniumun@gmail.com'],
+            details: ['jkkniumunclub@gmail.com'],
         },
         {
             icon: (
