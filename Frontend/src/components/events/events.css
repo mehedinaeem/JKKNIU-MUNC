@@ -1,0 +1,64 @@
+.events-page { overflow-wrap: anywhere; background: linear-gradient(#0f172a 96px, #f8fafc 96px); }
+.event-hero { position: relative; overflow: hidden; padding: 3.5rem 0 4.5rem; background: linear-gradient(120deg, #0f172a, #1e3a5f); }
+.event-hero::after { content: ''; position: absolute; width: 32rem; height: 32rem; border: 1px solid #fbbf2420; border-radius: 50%; right: -9rem; top: -12rem; pointer-events: none; }
+.event-filters { position: relative; margin-top: -1.75rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: white; box-shadow: 0 8px 30px #0f172a08; }
+.event-filter-label { display: flex; flex-direction: column; gap: .5rem; min-width: 0; font-size: .875rem; font-weight: 600; color: #1e3a5f; }
+.event-filter-label input, .event-filter-label select { width: 100%; min-width: 0; height: 3rem; border: 1px solid #cbd5e1; border-radius: .65rem; background: #f8fafc; padding: .65rem .75rem; font-size: 1rem; font-weight: 400; color: #0f172a; transition: border-color 250ms; }
+.event-filter-indicator { border-left: 3px solid #fbbf24; padding-left: .75rem; color: #64748b; }
+.event-reset { min-height: 44px; padding: .5rem; color: #1e40af; transition: color 250ms; }
+.event-reset:disabled { color: #64748b; opacity: .65; }
+.events-page :is(button, a, input, select):focus-visible, .event-dialog :is(button, a):focus-visible { outline: 3px solid #d97706; outline-offset: 4px; }
+.event-grid { min-height: 28rem; align-items: stretch; }
+.event-reveal { min-width: 0; }
+.event-awaiting { opacity: 0; transform: translateY(24px); }
+.event-revealed { animation: fadeInUp 500ms ease-out both; animation-delay: var(--reveal-delay, 0ms); }
+.event-card { width: 100%; height: 100%; display: flex; flex-direction: column; text-align: left; overflow: hidden; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; box-shadow: 0 4px 18px #0f172a05; transition: transform 300ms, box-shadow 300ms, border-color 300ms; }
+.event-card:hover { transform: translateY(-5px); border-color: #d6b667; box-shadow: 0 14px 35px #0f172a14; }
+.event-card-image { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; position: relative; background: #e2e8f0; }
+.event-card-image picture, .event-card-image img { display: block; width: 100%; height: 100%; }
+.event-card-image img { object-fit: cover; transition: transform 350ms; }
+.event-card:hover img { transform: scale(1.04); }
+.event-year { position: absolute; top: .8rem; right: 1rem; background: #0f172ae8; color: white; padding: .3rem .7rem; border-radius: .4rem; font-size: .75rem; }
+.event-card-body { padding: 1.4rem; flex: 1; display: flex; flex-direction: column; align-items: flex-start; }
+.event-category { display: inline-block; border-radius: .4rem; background: #fffbeb; color: #92400e; padding: .3rem .6rem; font-size: .75rem; font-weight: 600; }
+.event-card-action { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 1.5rem; color: #1e40af; font-size: .875rem; font-weight: 600; }
+.event-dialog { padding: 0; border: 0; background: transparent; width: min(880px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); color: #1f2937; overflow-y: auto; border-radius: 1.25rem; overscroll-behavior: contain; animation: event-dialog-in 250ms ease-out both; }
+.event-dialog::backdrop { background: #0f172acc; backdrop-filter: blur(4px); animation: event-backdrop-in 250ms ease-out both; }
+.event-dialog-surface { position: relative; background: white; min-width: 0; overflow-wrap: anywhere; }
+.event-close { position: sticky; float: right; top: .75rem; margin: .75rem .75rem -3.5rem 0; z-index: 2; width: 44px; height: 44px; border-radius: 50%; background: #0f172aee; color: white; box-shadow: 0 2px 10px #0002; }
+.event-detail-cover { display: block; background: #f1f5f9; }
+.event-detail-cover img { width: 100%; max-height: 420px; object-fit: contain; }
+.event-gallery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.event-gallery-grid button { overflow: hidden; border-radius: .65rem; background: #f1f5f9; }
+.event-gallery-grid picture { display: block; }
+.event-gallery-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; transition: transform 300ms; }
+.event-gallery-grid button:hover img { transform: scale(1.04); }
+.event-source { padding: .7rem 1rem; border: 1px solid #cbd5e1; border-radius: .6rem; color: #1e40af; font-size: .875rem; transition: background 250ms; }
+.event-source:hover { background: #eff6ff; }
+.event-lightbox { width: min(1200px, calc(100% - 1rem)); }
+.event-lightbox .event-dialog-surface { background: #0f172a; color: white; padding: 3.8rem .5rem .75rem; }
+.event-lightbox .event-close { position: absolute; top: 0; right: 0; }
+.event-lightbox-image { display: block; animation: event-backdrop-in 220ms ease-out; }
+.event-lightbox-image img { height: min(72dvh, 850px); width: 100%; object-fit: contain; }
+.event-lightbox-controls { display: flex; justify-content: center; gap: 2rem; align-items: center; margin-top: .75rem; }
+.event-lightbox-controls button { width: 48px; height: 48px; border: 1px solid #64748b; border-radius: 50%; font-size: 1.3rem; }
+.event-lightbox-controls button:disabled { opacity: .35; }
+.event-dialog.is-closing { animation: event-dialog-out 180ms ease-in both; }
+.event-dialog.is-closing::backdrop { animation: event-backdrop-out 180ms ease-in both; }
+@keyframes event-dialog-in { from { opacity: 0; transform: translateY(20px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes event-dialog-out { to { opacity: 0; transform: translateY(12px) scale(.99); } }
+@keyframes event-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes event-backdrop-out { to { opacity: 0; } }
+@media (max-width: 640px) {
+    .event-hero { padding-top: 2.5rem; padding-bottom: 3.5rem; }
+    .event-filters { padding: 1rem; }
+    .event-card-image { aspect-ratio: 4 / 5; }
+    .event-dialog { width: calc(100% - 1rem); max-height: calc(100dvh - 1rem); border-radius: .9rem; }
+    .event-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    html:has(.events-page) { scroll-behavior: auto; }
+    .events-page *, .events-page *::after, .event-dialog, .event-dialog *, .event-dialog::backdrop { animation: none !important; transition: none !important; }
+    .event-awaiting { opacity: 1; transform: none; }
+    .event-card:hover, .event-card:hover img, .event-gallery-grid button:hover img { transform: none; }
+}

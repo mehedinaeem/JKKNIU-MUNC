@@ -6,9 +6,10 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
  * Sticky navigation bar with logo, menu links, and mobile hamburger menu
  */
 const Navbar = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const [openLocation, setOpenLocation] = useState(null);
     const [isScrolled, setIsScrolled] = useState(false);
     const location = useLocation();
+    const isOpen = openLocation === location.key;
 
     // Navigation links configuration
     const navLinks = [
@@ -27,11 +28,6 @@ const Navbar = () => {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
-
-    // Close mobile menu when route changes
-    useEffect(() => {
-        setIsOpen(false);
-    }, [location]);
 
     return (
         <nav
@@ -72,6 +68,7 @@ const Navbar = () => {
                             <NavLink
                                 key={link.name}
                                 to={link.path}
+                                onClick={() => setOpenLocation(null)}
                                 className={({ isActive }) =>
                                     `relative font-medium transition-all duration-300 ${isScrolled
                                         ? isActive
@@ -101,7 +98,7 @@ const Navbar = () => {
 
                     {/* Mobile Menu Button */}
                     <button
-                        onClick={() => setIsOpen(!isOpen)}
+                        onClick={() => setOpenLocation(isOpen ? null : location.key)}
                         className={`md:hidden p-2 rounded-lg transition-colors duration-300 ${isScrolled ? 'text-primary-600' : 'text-white'
                             }`}
                         aria-label="Toggle menu"
@@ -142,6 +139,7 @@ const Navbar = () => {
                             <NavLink
                                 key={link.name}
                                 to={link.path}
+                                onClick={() => setOpenLocation(null)}
                                 className={({ isActive }) =>
                                     `block px-4 py-3 rounded-xl font-medium transition-all duration-300 ${isScrolled
                                         ? isActive

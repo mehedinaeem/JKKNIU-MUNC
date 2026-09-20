@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { galleryImages, galleryCategories } from '../data/gallery';
 
 /**
@@ -10,6 +10,13 @@ const GalleryPage = () => {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [currentImage, setCurrentImage] = useState(null);
 
+    useEffect(() => {
+        if (!lightboxOpen) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = previousOverflow; };
+    }, [lightboxOpen]);
+
     const filteredImages = selectedCategory === 'All'
         ? galleryImages
         : galleryImages.filter((img) => img.category === selectedCategory);
@@ -17,13 +24,11 @@ const GalleryPage = () => {
     const openLightbox = (image) => {
         setCurrentImage(image);
         setLightboxOpen(true);
-        document.body.style.overflow = 'hidden';
     };
 
     const closeLightbox = () => {
         setLightboxOpen(false);
         setCurrentImage(null);
-        document.body.style.overflow = 'unset';
     };
 
     const navigateImage = (direction) => {
