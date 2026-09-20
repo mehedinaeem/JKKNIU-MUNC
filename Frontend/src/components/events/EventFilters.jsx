@@ -1,7 +1,7 @@
 export default function EventFilters({ filters, onChange, years, categories, onReset }) {
     const active = filters.search || filters.year || filters.category;
     return (
-        <div className="event-filters motion-safe:animate-fade-in-up">
+        <div className="event-filters hidden md:block motion-safe:animate-fade-in-up">
             <div className="grid gap-4 md:grid-cols-[1.4fr_.7fr_1fr]">
                 <label className="event-filter-label">Search the archive
                     <input type="search" placeholder="Search events, topics…" value={filters.search} onChange={e => onChange('search', e.target.value)} />

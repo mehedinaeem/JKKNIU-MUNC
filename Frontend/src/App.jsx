@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import AboutPage from './pages/AboutPage';
 import EventsPage from './pages/EventsPage';
+import EventDetailsPage from './pages/EventDetailsPage';
 import GalleryPage from './pages/GalleryPage';
 import ContactPage from './pages/ContactPage';
 
@@ -24,6 +25,7 @@ function App() {
 
           {/* Events Page */}
           <Route path="events" element={<EventsPage />} />
+          <Route path="events/:slug" element={<EventDetailsPage />} />
 
           {/* Gallery Page */}
           <Route path="gallery" element={<GalleryPage />} />

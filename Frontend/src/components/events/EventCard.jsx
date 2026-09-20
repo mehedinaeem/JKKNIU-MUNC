@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import EventImage from './EventImage';
 import { displayDate } from './eventUtils';
 
-export default function EventCard({ event, index, onOpen }) {
+export default function EventCard({ event, index }) {
     const ref = useRef(null);
     useEffect(() => {
         const element = ref.current;
@@ -20,7 +21,7 @@ export default function EventCard({ event, index, onOpen }) {
     }, []);
     return (
         <article ref={ref} className="event-reveal" style={{ '--reveal-delay': `${index % 3 * 60}ms` }}>
-            <button className="event-card group" onClick={() => onOpen(event)} aria-label={`View details: ${event.title}`} aria-haspopup="dialog">
+            <Link className="event-card group" to={`/events/${event.slug}`} aria-label={`View details: ${event.title}`}>
                 <div className="event-card-image">
                     <EventImage src={event.cardDesktop || event.cardMobile} mobile={event.cardMobile} cover={event.coverImage} alt={event.title} />
                     <span className="event-year">{event.year}</span>
@@ -32,7 +33,7 @@ export default function EventCard({ event, index, onOpen }) {
                     {event.shortDescription && <p className="text-sm leading-relaxed text-gray-600 mt-3 line-clamp-3">{event.shortDescription}</p>}
                     <span className="event-card-action">View details <span aria-hidden="true">↗</span></span>
                 </div>
-            </button>
+            </Link>
         </article>
     );
 }

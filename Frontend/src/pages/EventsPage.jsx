@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { events } from '../data/events';
 import EventCard from '../components/events/EventCard';
 import EventFilters from '../components/events/EventFilters';
-import EventDetailsModal from '../components/events/EventDetailsModal';
 import EventsStats from '../components/events/EventsStats';
 import { newestFirst } from '../components/events/eventUtils';
 import '../components/events/events.css';
@@ -14,7 +13,6 @@ const categories = [...new Set(events.map(event => event.category).filter(Boolea
 
 export default function EventsPage() {
     const [filters, setFilters] = useState(initialFilters);
-    const [selected, setSelected] = useState(null);
     const filtered = useMemo(() => {
         const query = filters.search.trim().toLocaleLowerCase();
         return sortedEvents.filter(event => (!filters.year || String(event.year) === filters.year)
@@ -37,7 +35,7 @@ export default function EventsPage() {
                 <p className="text-sm text-gray-500">Newest first</p>
             </div>
             <div key={JSON.stringify(filters)} className="event-grid grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.map((event, index) => <EventCard key={event.id} event={event} index={index} onOpen={setSelected} />)}
+                {filtered.map((event, index) => <EventCard key={event.id} event={event} index={index} />)}
                 {!filtered.length && <div className="col-span-full text-center py-20 bg-white border border-slate-200 rounded-2xl">
                     <h2 className="text-2xl text-primary-900">No events found</h2>
                     <p className="text-gray-500 mt-3 mb-6">Try another keyword, year or category.</p>
@@ -45,6 +43,5 @@ export default function EventsPage() {
                 </div>}
             </div>
         </section>
-        {selected && <EventDetailsModal event={selected} onClose={() => setSelected(null)} />}
     </div>;
 }
