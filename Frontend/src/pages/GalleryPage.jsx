@@ -1,117 +1,64 @@
-import { useEffect, useState } from 'react';
-import { galleryImages, galleryCategories } from '../data/gallery';
+import { useMemo, useState } from 'react';
+import { galleryImages, galleryEvents, galleryYears, galleryCategories } from '../data/gallery';
+import GalleryTile from '../components/gallery/GalleryTile';
+import GalleryLightbox from '../components/gallery/GalleryLightbox';
+import '../components/events/events.css';
+import '../components/gallery/gallery.css';
 
-/**
- * GalleryPage Component
- * Photo gallery with filtering and lightbox functionality
- */
-const GalleryPage = () => {
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [currentImage, setCurrentImage] = useState(null);
+const initialFilters = { search: '', year: '', category: '', event: '' };
+const batchSize = 24;
 
-    useEffect(() => {
-        if (!lightboxOpen) return;
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = previousOverflow; };
-    }, [lightboxOpen]);
+export default function GalleryPage() {
+    const [filters, setFilters] = useState(initialFilters);
+    const [limit, setLimit] = useState(batchSize);
+    const [active, setActive] = useState(null);
+    const filtered = useMemo(() => galleryImages.flatMap(item => {
+        const query = filters.search.trim().toLocaleLowerCase();
+        const event = item.sourceEvents.find(source => (!filters.year || String(source.year) === filters.year)
+            && (!filters.category || source.category === filters.category)
+            && (!filters.event || source.id === filters.event)
+            && (!query || [source.title, source.category, source.date, source.shortDescription, source.fullDescription].some(value => value?.toLocaleLowerCase().includes(query))));
+        return event ? [{ ...item, event }] : [];
+    }), [filters]);
+    function changeFilter(key, value) {
+        setFilters(previous => ({ ...previous, [key]: value }));
+        setLimit(batchSize);
+    }
+    function reset() { setFilters(initialFilters); setLimit(batchSize); }
+    const visible = filtered.slice(0, limit);
+    const hasFilters = Object.values(filters).some(Boolean);
 
-    const filteredImages = selectedCategory === 'All'
-        ? galleryImages
-        : galleryImages.filter((img) => img.category === selectedCategory);
-
-    const openLightbox = (image) => {
-        setCurrentImage(image);
-        setLightboxOpen(true);
-    };
-
-    const closeLightbox = () => {
-        setLightboxOpen(false);
-        setCurrentImage(null);
-    };
-
-    const navigateImage = (direction) => {
-        const currentIndex = filteredImages.findIndex((img) => img.id === currentImage.id);
-        let newIndex = direction === 'prev'
-            ? (currentIndex === 0 ? filteredImages.length - 1 : currentIndex - 1)
-            : (currentIndex === filteredImages.length - 1 ? 0 : currentIndex + 1);
-        setCurrentImage(filteredImages[newIndex]);
-    };
-
-    return (
-        <div className="pt-24">
-            {/* Hero */}
-            <section className="bg-gradient-to-br from-primary-700 to-primary-900 text-white py-16 md:py-24">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <h1 className="font-heading font-bold text-4xl md:text-5xl lg:text-6xl mb-6">Gallery</h1>
-                    <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto">
-                        Explore moments from our conferences, workshops, and community events.
-                    </p>
-                </div>
-            </section>
-
-            {/* Gallery */}
-            <section className="section-container">
-                {/* Filter */}
-                <div className="flex flex-wrap justify-center gap-2 mb-12">
-                    {galleryCategories.map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${selectedCategory === cat ? 'bg-primary-600 text-white shadow-soft' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredImages.map((image) => (
-                        <div key={image.id} onClick={() => openLightbox(image)} className="relative group cursor-pointer overflow-hidden rounded-xl aspect-square">
-                            <img src={image.thumbnail} alt={image.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-primary-900/80 via-primary-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                <div className="absolute bottom-0 left-0 right-0 p-4">
-                                    <h3 className="text-white font-semibold text-sm mb-1 line-clamp-1">{image.title}</h3>
-                                    <span className="text-white/70 text-xs">{image.category}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Lightbox */}
-            {lightboxOpen && currentImage && (
-                <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center" onClick={closeLightbox}>
-                    <button onClick={closeLightbox} className="absolute top-4 right-4 text-white hover:text-accent-400 z-50">
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); navigateImage('prev'); }} className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-accent-400 z-50 p-2">
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); navigateImage('next'); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-accent-400 z-50 p-2">
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                    <div className="max-w-5xl max-h-[85vh] w-full mx-4" onClick={(e) => e.stopPropagation()}>
-                        <img src={currentImage.src} alt={currentImage.title} className="w-full h-full object-contain rounded-lg" />
-                        <div className="text-center mt-4">
-                            <h3 className="text-white font-heading font-semibold text-lg">{currentImage.title}</h3>
-                            <p className="text-white/60 text-sm mt-1">{currentImage.category}</p>
-                        </div>
+    return <div className="events-page gallery-page pt-24">
+        <header className="event-hero">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 motion-safe:animate-fade-in-up">
+                <p className="text-accent-400 text-xs uppercase tracking-[.2em] font-semibold mb-4">JKKNIU Model United Nations Club</p>
+                <h1 className="text-4xl md:text-6xl text-white font-bold">Our story <span className="text-accent-400">in pictures</span></h1>
+                <p className="text-slate-300 mt-5 max-w-2xl leading-relaxed">Explore photographs and artwork from the club’s event archive. Open an image to discover the event behind it.</p>
+                <p className="text-sm text-slate-300 mt-6"><strong className="text-accent-400">{galleryImages.length}</strong> unique images <span className="mx-3" aria-hidden="true">/</span><strong className="text-accent-400">{galleryEvents.length}</strong> event records</p>
+            </div>
+        </header>
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16" aria-label="Photo gallery">
+            <div className="event-filters">
+                <label className="event-filter-label">Search events or photos
+                    <input type="search" placeholder="Search the collection…" value={filters.search} onChange={e => changeFilter('search', e.target.value)} />
+                </label>
+                <details className="gallery-filter-options mt-4">
+                    <summary className="text-sm text-primary-900 font-semibold cursor-pointer py-3">Filter collection{hasFilters ? ' · Filters active' : ''}</summary>
+                    <div className="grid gap-4 md:grid-cols-3 pt-3">
+                        <label className="event-filter-label">Year<select aria-label="Year" value={filters.year} onChange={e => changeFilter('year', e.target.value)}><option value="">All Years</option>{galleryYears.map(year => <option key={year}>{year}</option>)}</select></label>
+                        <label className="event-filter-label">Category<select aria-label="Category" value={filters.category} onChange={e => changeFilter('category', e.target.value)}><option value="">All Categories</option>{galleryCategories.map(category => <option key={category}>{category}</option>)}</select></label>
+                        <label className="event-filter-label">Event<select aria-label="Event" value={filters.event} onChange={e => changeFilter('event', e.target.value)}><option value="">All Events</option>{galleryEvents.map(event => <option key={event.id} value={event.id}>{event.title}</option>)}</select></label>
                     </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default GalleryPage;
+                </details>
+                {hasFilters && <button className="event-reset mt-2" onClick={reset}>Reset filters ↺</button>}
+            </div>
+            <p role="status" aria-live="polite" className="text-sm text-gray-600 py-6">Showing {visible.length} of {filtered.length} images</p>
+            <div key={JSON.stringify(filters)} className="gallery-main-grid">
+                {visible.map((item, index) => <GalleryTile key={item.id} item={item} index={index} onOpen={() => setActive(index)} />)}
+            </div>
+            {!filtered.length && <div className="text-center py-16"><h2 className="text-2xl text-primary-900">No images found</h2><p className="text-gray-600 mt-3 mb-6">Try another event, year or keyword.</p><button className="btn-primary" onClick={reset}>Clear filters</button></div>}
+            {limit < filtered.length && <div className="text-center mt-10"><button className="btn-primary" onClick={() => setLimit(value => value + batchSize)}>Load more images</button></div>}
+        </section>
+        {active !== null && <GalleryLightbox items={filtered} initialIndex={active} onClose={() => setActive(null)} />}
+    </div>;
+}

@@ -29,7 +29,7 @@ export default function EventDialog({ children, labelId, onClose, className = ''
         if (!ref.current.contains(e.target)) return;
         onKeyDown?.(e);
         if (e.key !== 'Tab') return;
-        const controls = [...ref.current.querySelectorAll('button:not(:disabled), a[href], input, select, [tabindex="0"]')]
+        const controls = [...ref.current.querySelectorAll('button:not(:disabled), a[href], input, select, summary, [tabindex="0"]')]
             .filter(element => element.getClientRects().length);
         const first = controls[0];
         const last = controls[controls.length - 1];
