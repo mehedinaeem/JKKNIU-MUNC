@@ -1,0 +1,49 @@
+.executive-committee { scroll-margin-top: 90px; background: #f8fafc; color: #173a8f; }
+.executive-committee > .section-container { max-width: 1240px; }
+.committee-intro { text-align: center; margin-bottom: 2rem; }
+.committee-intro h2 { font-size: clamp(1.9rem, 4vw, 2.75rem); line-height: 1.25; font-weight: 700; color: #173a8f; }
+.committee-subtitle { max-width: 600px; margin: 1rem auto; color: #64748b; line-height: 1.75; font-weight: 500; }
+.committee-count { color: #64748b; font-size: .8rem; }
+.committee-hierarchy { list-style: none; padding: 0; margin: 0; }
+.leadership-tier { margin-top: 2.5rem; }
+.leadership-tier-heading { margin-bottom: 1.25rem; text-align: center; }
+.leadership-tier-heading h3 { color: #334b73; font-size: .875rem; font-weight: 600; letter-spacing: .04em; }
+.leadership-tier-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; margin: 0 auto; }
+.leadership-row-1 { grid-template-columns: minmax(0, 380px); justify-content: center; }
+.leadership-row-2 { grid-template-columns: repeat(2, minmax(0, 340px)); justify-content: center; }
+.executive-member { flex: 0 1 320px; min-width: 0; padding: 1.75rem 1.25rem; text-align: center; border: 1px solid #ded4b8; border-radius: 18px; background: #edf4ff; box-shadow: 0 5px 22px #0f172a06; transition: transform 280ms, border-color 280ms, box-shadow 280ms; }
+.executive-member-featured { flex-basis: 370px; }
+.executive-member-president { flex-basis: 410px; border-color: #d5bb78; box-shadow: 0 8px 28px #0f172a0a; }
+.executive-portrait { width: 140px; height: 140px; margin: 0 auto 1.25rem; position: relative; overflow: hidden; border: 2px solid #dbe5f3; border-radius: 50%; background: #f1f5f9; }
+.executive-member-featured .executive-portrait { width: 155px; height: 155px; }
+.executive-member-president .executive-portrait { width: 175px; height: 175px; }
+.executive-portrait img { position: absolute; width: var(--portrait-size); max-width: none; height: var(--portrait-size); left: 50%; top: var(--portrait-top); object-fit: contain; transform: translateX(-50%); transform-origin: 50% 10%; transition: transform 280ms; }
+.executive-member-info h4 { color: #173a8f; font-size: 1.125rem; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+.executive-member-president h4 { font-size: 1.375rem; }
+.executive-member-info p { font-size: .9rem; line-height: 1.6; margin-top: .45rem; color: #a66b00; font-weight: 500; transition: color 280ms; }
+.committee-pending { opacity: 0; transform: translateY(20px); }
+.committee-visible { animation: committee-reveal 500ms ease-out both; }
+.committee-visible .executive-portrait, .committee-visible .executive-member-info { animation: committee-reveal 500ms ease-out both; animation-delay: var(--member-delay, 0ms); }
+@keyframes committee-reveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+@media (hover: hover) and (pointer: fine) {
+    .executive-member:hover { transform: translateY(-5px); border-color: #c4a35a; box-shadow: 0 12px 30px #0f172a10; }
+    .executive-member:hover .executive-portrait img { transform: translateX(-50%) scale(1.025); }
+    .executive-member:hover .executive-member-info p { color: #885800; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+    .leadership-tier-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 720px; }
+    .leadership-row-1 { grid-template-columns: minmax(0, 380px); }
+}
+@media (max-width: 639px) {
+    .leadership-tier-cards { grid-template-columns: minmax(0, 380px); justify-content: center; gap: 1rem; }
+    .executive-member { width: 100%; padding: 1.5rem; }
+    .executive-portrait, .executive-member-featured .executive-portrait { width: 130px; height: 130px; }
+    .executive-member-president .executive-portrait { width: 145px; height: 145px; }
+    .executive-member-president h4 { font-size: 1.2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .executive-committee * { animation: none !important; transition: none !important; }
+    .committee-pending { opacity: 1; transform: none; }
+    .executive-member:hover { transform: none; }
+    .executive-member:hover .executive-portrait img { transform: translateX(-50%); }
+}

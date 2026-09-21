@@ -1,51 +1,12 @@
 import { Link } from 'react-router-dom';
 import ClubHistory from '../components/ClubHistory';
+import ExecutiveCommittee from '../components/committee/ExecutiveCommittee';
 
 /**
  * AboutPage Component
  * Club history, mission, vision, and executive committee information
  */
 const AboutPage = () => {
-    // Executive Committee Members
-    const executiveCommittee = [
-        {
-            name: "Ahmed Rahman",
-            role: "President",
-            image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
-            department: "International Relations",
-        },
-        {
-            name: "Fatima Akter",
-            role: "Vice President",
-            image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
-            department: "Political Science",
-        },
-        {
-            name: "Mohammad Hasan",
-            role: "Secretary General",
-            image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300",
-            department: "Law",
-        },
-        {
-            name: "Nusrat Jahan",
-            role: "Deputy Secretary",
-            image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300",
-            department: "Economics",
-        },
-        {
-            name: "Karim Khan",
-            role: "Treasurer",
-            image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300",
-            department: "Business Administration",
-        },
-        {
-            name: "Shirin Sultana",
-            role: "Director of Training",
-            image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300",
-            department: "English",
-        },
-    ];
-
     return (
         <div className="pt-24">
             {/* Hero Section */}
@@ -105,35 +66,7 @@ const AboutPage = () => {
 
             <ClubHistory />
 
-            {/* Executive Committee Section */}
-            <section className="section-container bg-gray-50">
-                <div className="text-center mb-12">
-                    <h2 className="section-title">Executive Committee</h2>
-                    <p className="section-subtitle">
-                        Meet the dedicated team leading our club to new heights.
-                    </p>
-                </div>
-
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {executiveCommittee.map((member, index) => (
-                        <div key={index} className="card text-center group">
-                            <div className="relative w-32 h-32 mx-auto mb-4">
-                                <img
-                                    src={member.image}
-                                    alt={member.name}
-                                    className="w-full h-full object-cover rounded-full border-4 border-primary-100 group-hover:border-primary-400 transition-all duration-300"
-                                />
-                                <div className="absolute inset-0 rounded-full bg-primary-600/0 group-hover:bg-primary-600/10 transition-all duration-300" />
-                            </div>
-                            <h3 className="font-heading font-semibold text-lg text-primary-700">
-                                {member.name}
-                            </h3>
-                            <p className="text-accent-500 font-medium text-sm mb-1">{member.role}</p>
-                            <p className="text-gray-500 text-xs">{member.department}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
+            <ExecutiveCommittee />
 
             {/* CTA Section */}
             <section className="section-container">
