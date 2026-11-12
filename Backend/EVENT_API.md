@@ -19,11 +19,11 @@ python manage.py runserver 127.0.0.1:8000
 | --- | --- | --- | --- |
 | GET | `/api/events/` | Public, published only | 200 paginated results |
 | GET | `/api/events/{slug}/` | Public, published only | 200; otherwise 404 |
-| POST | `/api/admin/events/` | Active authenticated staff | 201 |
-| PATCH | `/api/admin/events/{id}/` | Active authenticated staff | 200 |
-| DELETE | `/api/admin/events/{id}/` | Active authenticated staff | 204, no body |
+| POST | `/api/admin/events/` | Authorized assigned administrator | 201 |
+| PATCH | `/api/admin/events/{id}/` | Authorized assigned administrator | 200 |
+| DELETE | `/api/admin/events/{id}/` | Authorized assigned administrator | 204, no body |
 
-Staff can modify any event status using numeric IDs. Public endpoints exclude draft, completed and cancelled events even for staff; a status query cannot override this. This phase does not add a staff list/retrieve endpoint. Staff can browse all events and forms in Django Admin at `/admin/`.
+Super Admins can modify all events; Event Admins can modify assigned events using numeric IDs. Only Super Admins create events. Reviewers can read assigned event context and review applications but cannot modify events/forms. See [AUTHENTICATION.md](AUTHENTICATION.md) for the current role policy. Public endpoints exclude draft, completed and cancelled events even for staff; a status query cannot override this. Administrative list/retrieve endpoints now provide scoped event access. Staff can browse all events and forms in Django Admin at `/admin/`.
 
 The existing session authentication is used: sign into Django Admin, then send same-origin API requests with the session cookie and `X-CSRFToken` header containing the CSRF token. Browser developer tools or a session-aware HTTP client can be used. Keep CSRF protection enabled. Anonymous/nonstaff/inactive users receive 403, and session writes without a valid CSRF token receive 403. Cross-origin cookie login from Netlify is not implemented. `createsuperuser` prompts locally; no credentials are shipped.
 

@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.db.models import Count
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
@@ -11,7 +12,7 @@ from events.models import Event
 from accounts.permissions import EventManagementPermission
 from accounts.roles import scope_queryset
 from .models import RegistrationForm
-from .serializers import DraftFormSerializer, DuplicateFormSerializer, SubmissionInputSerializer
+from .serializers import DraftFormSerializer, DuplicateFormSerializer, SubmissionInputSerializer, FormSummarySerializer
 from .services import availability_error, draft_schema, duplicate_form, publish_form, submit_form
 
 
@@ -25,6 +26,7 @@ def published_data(form):
     error = availability_error(form)
     return {'id': form.pk, 'slug': form.slug, 'event_slug': form.event.slug,
             'version': version.number, 'schema': version.schema,
+            'allow_multiple_submissions': form.allow_multiple_submissions,
             'accepting_submissions': error is None, 'unavailable_reason': error}
 
 
@@ -45,9 +47,21 @@ class PublicFormDetail(APIView):
         return Response(published_data(public_form(form_slug)))
 
 
-class StaffFormCreate(generics.CreateAPIView):
+class StaffFormCreate(generics.ListCreateAPIView):
     permission_classes = [EventManagementPermission]
     serializer_class = DraftFormSerializer
+
+    def get_serializer_class(self):
+        return FormSummarySerializer if self.request.method in {'GET', 'HEAD'} else DraftFormSerializer
+
+    def get_queryset(self):
+        forms = scope_queryset(RegistrationForm.objects.select_related('event').prefetch_related('versions').annotate(field_count=Count('fields')), self.request.user)
+        event_id = self.request.query_params.get('event')
+        if event_id is not None:
+            if not event_id.isdecimal() or len(event_id) > 15:
+                raise ValidationError({'event': 'Expected a numeric event ID.'})
+            forms = forms.filter(event_id=int(event_id))
+        return forms
 
 
 class StaffFormDetail(generics.RetrieveUpdateAPIView):
@@ -82,7 +96,7 @@ class StaffFormDuplicate(APIView):
 
     def post(self, request, pk):
         get_object_or_404(scope_queryset(RegistrationForm.objects.all(), request.user), pk=pk)
-        serializer = DuplicateFormSerializer(data=request.data)
+        serializer = DuplicateFormSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         try:
             form = duplicate_form(pk, **serializer.validated_data)

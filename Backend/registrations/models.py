@@ -45,6 +45,8 @@ class FormSubmission(models.Model):
     submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
     # Blank is retained only for historical submissions with no recorded email.
     applicant_email = models.EmailField(blank=True)
+    submission_key = models.UUIDField(null=True, blank=True, editable=False)
+    submission_digest = models.CharField(max_length=64, blank=True, editable=False)
     answers = models.JSONField()
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.SUBMITTED, db_index=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
@@ -52,6 +54,7 @@ class FormSubmission(models.Model):
 
     class Meta:
         ordering = ['-submitted_at', '-id']
+        constraints = [models.UniqueConstraint(fields=['registration_form', 'submission_key'], name='unique_form_submission_key')]
         indexes = [models.Index(fields=['registration_form', 'applicant_email'], name='submission_form_email_idx')]
 
     def clean(self):
@@ -111,4 +114,22 @@ class SubmissionStatusChange(models.Model):
     previous_status = models.CharField(max_length=15)
     status = models.CharField(max_length=15)
     changed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class ReviewerNote(models.Model):
+    submission = models.ForeignKey(FormSubmission, on_delete=models.PROTECT, related_name='reviewer_notes')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    body = models.TextField(max_length=10000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at', 'id']
+
+
+class ReviewAccessLog(models.Model):
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    action = models.CharField(max_length=30)
+    submission = models.ForeignKey(FormSubmission, null=True, blank=True, on_delete=models.PROTECT)
+    metadata = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)

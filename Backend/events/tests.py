@@ -169,3 +169,30 @@ class RegistrationFormTests(TestCase):
     def test_demo_command_rejects_production(self):
         with self.assertRaises(CommandError):
             call_command('seed_demo_events', stdout=StringIO())
+
+
+class PublicRegistrationAvailabilityTests(TestCase):
+    def test_registration_flag_respects_form_version_deadline_capacity_and_event(self):
+        from forms.models import FormField
+        from forms.services import publish_form
+        client = APIClient()
+        now = timezone.now()
+        event = Event.objects.create(title='Registration event', slug='registration-event', event_type='conference', status='published', start_date=now + timedelta(days=20))
+        form = RegistrationForm.objects.create(event=event, title='Delegate', slug='registration-delegate', form_type='delegate')
+        FormField.objects.create(form=form, key='name', label='Name', field_type='short_text')
+        path = '/api/events/registration-event/'
+        self.assertFalse(client.get(path).data['registration_open'])
+        publish_form(form.pk)
+        self.assertTrue(client.get(path).data['registration_open'])
+        self.assertTrue(client.get('/api/events/').data['results'][0]['registration_open'])
+        for changes in ({'closes_at': now - timedelta(seconds=1)}, {'opens_at': now + timedelta(days=1)}, {'capacity': 1, 'submission_count': 1}, {'status': 'archived'}):
+            with self.subTest(changes=changes):
+                RegistrationForm.objects.filter(pk=form.pk).update(**changes)
+                self.assertFalse(client.get(path).data['registration_open'])
+                RegistrationForm.objects.filter(pk=form.pk).update(closes_at=None, opens_at=None, capacity=None, submission_count=0, status='published')
+        event.registration_end = now - timedelta(seconds=1)
+        event.save()
+        self.assertFalse(client.get(path).data['registration_open'])
+        event.status = 'draft'
+        event.save()
+        self.assertEqual(client.get(path).status_code, 404)

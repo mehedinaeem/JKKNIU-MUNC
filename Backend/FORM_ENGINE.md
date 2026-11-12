@@ -1,6 +1,6 @@
 # Dynamic form engine
 
-Definitions live in `RegistrationForm` and `FormField`, edited through staff APIs or Django Admin. No Django/React source changes are needed to add questions. The existing frontend is unchanged and does not render these schemas yet.
+Definitions live in `RegistrationForm` and `FormField`, edited through staff APIs or Django Admin. No Django/React source changes are needed to add questions. The historical public archive remains unchanged; dynamic public registration pages render published schemas separately. A separate authenticated no-code administration workspace now edits and previews these schemas; see [Frontend administration](../Frontend/ADMIN.md).
 
 ## Drafts and immutable versions
 
@@ -18,6 +18,7 @@ The existing globally unique form slug avoids collisions between events. A slug 
 | --- | --- | --- |
 | GET | `/api/events/{event_slug}/forms/` | Public paginated list of published forms for a published event |
 | GET | `/api/forms/{form_slug}/` | Published snapshot and availability |
+| GET | `/api/admin/forms/` | Authorized assigned managers list drafts/all statuses; optional event filter |
 | POST | `/api/admin/forms/` | Staff creates draft, optionally with fields |
 | GET / PATCH | `/api/admin/forms/{id}/` | Staff reads/edits draft and operational settings |
 | GET | `/api/admin/forms/{id}/preview/` | Staff previews draft schema |
@@ -26,7 +27,7 @@ The existing globally unique form slug avoids collisions between events. A slug 
 | POST | `/api/forms/{form_slug}/submissions/` | Authenticated applicant submits answers; 201 |
 | GET | `/api/submission-files/{id}/` | Applicant owner or staff downloads private attachment |
 
-Staff writes require an active authenticated staff session and a valid CSRF token. Anonymous submissions are now supported at `/api/forms/{slug}/submit/` with a required applicant email; see [SUBMISSIONS.md](SUBMISSIONS.md). The older `/submissions/` route retains authenticated access. There is no new account/login API. Same-origin Django session authentication is retained; cross-origin Netlify login is not added. Django Admin supports field editing/order, JSON preview, publish/close/archive/duplicate actions, and read-only submission review.
+Form management requires a Super Admin or assigned Event Admin session and a valid CSRF token; Reviewers cannot edit definitions. See [AUTHENTICATION.md](AUTHENTICATION.md) for the current role policy. Anonymous submissions are now supported at `/api/forms/{slug}/submit/` with a required applicant email; see [SUBMISSIONS.md](SUBMISSIONS.md). The older `/submissions/` route retains authenticated access. There is no new account/login API. Same-origin Django session authentication is retained; cross-origin Netlify login is not added. Django Admin supports field editing/order, JSON preview, publish/close/archive/duplicate actions, and read-only submission review.
 
 Public unpublished forms/events return 404. Closed/archived forms are also hidden. A published form outside its window or at capacity is readable with `accepting_submissions: false`; its submission endpoint returns 400. Field errors return 400, unauthorized sessions 403, missing objects 404. Public form lists use the configured 25-item pagination.
 

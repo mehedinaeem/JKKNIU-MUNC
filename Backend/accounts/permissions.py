@@ -40,5 +40,5 @@ class ApplicationReviewPermission(BasePermission):
         user = request.user
         if is_super_admin(user):
             return True
-        action = 'change' if request.method == 'PATCH' else 'view'
+        action = 'change' if request.method in {'PATCH', 'POST'} else 'view'
         return is_administrator(user) and user.has_perm(f'registrations.{action}_formsubmission')

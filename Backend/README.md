@@ -31,7 +31,18 @@ The existing frontend can independently run with `cd Frontend && npm run dev` fr
 fetch('http://127.0.0.1:8000/api/health/').then(response => response.json())
 ```
 
-The API allows `http://localhost:5173` in development. Origins include scheme and port; add any other local origins explicitly. CORS does not authenticate users. Cross-origin cookies are disabled. Django admin uses same-origin session authentication and CSRF protection. A future Netlify authentication flow needs its own explicit design; no new login/account-registration endpoints are exposed. Anonymous form submissions and staff review are documented in [SUBMISSIONS.md](SUBMISSIONS.md); the existing authenticated route remains available.
+The API allows explicit `http://localhost:5173` development requests. Administrator login, logout, CSRF, event assignments and role permissions are documented in [AUTHENTICATION.md](AUTHENTICATION.md). Use localhost for both local ports when testing session cookies. The recommended production design is a same-origin Netlify `/api/` proxy with first-party Django cookies; a proxy example is provided without changing active routing files. Anonymous submissions remain available. Public pages and styling are unchanged; the separate React administration UI is documented in [Frontend/ADMIN.md](../Frontend/ADMIN.md).
+
+## Administrator setup
+
+After configuring the local `.env` and applying migrations:
+
+```bash
+DEBUG=True python manage.py setup_admin_roles
+DEBUG=True python manage.py createsuperuser
+```
+
+Choose the first password interactively. No accounts/passwords are seeded. Staff flags alone no longer grant global administration: create Event Admin/Reviewer group memberships and event assignments through the Super Admin fallback interface. See [AUTHENTICATION.md](AUTHENTICATION.md) for secure setup, role policy and session API examples.
 
 ## Event management
 
@@ -88,3 +99,5 @@ python manage.py collectstatic --noinput
 ```
 
 The tests cover public health access without a database query, method restrictions, allowed/disallowed CORS, HTTPS proxy handling, app registration, aware timestamps, an auth database round trip, and isolated environment configuration. PostgreSQL configuration is tested without connecting. Live PostgreSQL and Heroku integration require infrastructure and are not validated locally.
+
+Application review dashboard, private notes, audit history and secure CSV/XLSX exports: [REVIEW_API.md](REVIEW_API.md).

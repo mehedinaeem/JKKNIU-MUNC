@@ -1,6 +1,6 @@
 # Public submissions and private files
 
-This extends the dynamic schema engine without changing the frontend or deploying anything. Definitions still live in the database; published versions remain immutable. `FormSubmission` replaces the earlier internal `Submission` model through a data-preserving rename/backfill migration. Existing answers, IDs, version links, timestamps and legacy file paths are retained. Historical records without a known email retain a blank value; all new submissions require an email. The old Python import name remains an alias for compatibility.
+This extends the dynamic schema engine; the public React integration is documented in [REGISTRATION.md](../Frontend/REGISTRATION.md). Nothing has been deployed. Definitions still live in the database; published versions remain immutable. `FormSubmission` replaces the earlier internal `Submission` model through a data-preserving rename/backfill migration. Existing answers, IDs, version links, timestamps and legacy file paths are retained. Historical records without a known email retain a blank value; all new submissions require an email. The old Python import name remains an alias for compatibility.
 
 ## Public API
 
@@ -34,7 +34,7 @@ The example answer keys must match the actual published schema. A 201 response c
 
 The reference is unique and random, with no email, sequence number or other applicant information encoded in it. It is a receipt identifier, **not an access token**. There is no public lookup endpoint for submissions, references, statuses, answers or files. Public responses never contain provider URLs, file IDs, private download links, applicant email, phone or previous answers. Responses use `Cache-Control: no-store`.
 
-This route intentionally accepts anonymous submissions without session cookies. Browser access is still limited to configured CORS origins; CORS itself is not an anti-abuse control. The existing `/api/forms/{slug}/submissions/` route remains authenticated and CSRF protected for compatibility. It uses the account email as its applicant email, invokes the same admission/storage service and rate limits, and retains its earlier owner-specific response/download behavior. No new login or account API was added.
+This route intentionally accepts anonymous submissions without session cookies. Browser access is still limited to configured CORS origins; CORS itself is not an anti-abuse control. The existing `/api/forms/{slug}/submissions/` route remains authenticated and CSRF protected for compatibility. It uses the account email as its applicant email, invokes the same admission/storage service and rate limits, and retains its earlier owner-specific response/download behavior. Administrator session endpoints are now available as described in [AUTHENTICATION.md](AUTHENTICATION.md); no public account-registration API was added.
 
 Every answer is checked server-side against the **current immutable published version**. Stale version numbers, unknown answer/file keys, missing required answers, invalid options or mismatched types return 400. Draft/unpublished/closed/archived forms or unpublished events return 404. Published but not-yet-open, expired or full forms reject admission with 400. Form/event opening bounds are inclusive, closing bounds exclusive, and event start is the final registration cutoff.
 
@@ -44,7 +44,7 @@ PostgreSQL row locks serialize admission against publish/edit/status/window chan
 
 ## Staff review
 
-Use an authenticated active staff session and CSRF tokens for mutations:
+Use an authenticated active Super Admin, Event Admin or Reviewer session, scoped to assigned events, with CSRF tokens for mutations. Staff status alone no longer grants access; see [AUTHENTICATION.md](AUTHENTICATION.md):
 
 | Method | Endpoint | Behavior |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ Use an authenticated active staff session and CSRF tokens for mutations:
 | PATCH | `/api/admin/submissions/{uuid}/status/` | Change status only; create actor/timestamp audit entry |
 | GET | `/api/submission-files/{id}/` | Staff streams a private attachment; authenticated legacy owners may access their own files |
 
-List filters: `event` and `registration_form` numeric IDs, exact `reference_number`, and `status`. Invalid filter values return 400. Results use the existing 25-item pagination. All staff/file responses are `private, no-store`. Anonymous or nonstaff users cannot read submission list/detail or change status. Anonymous applicants cannot retrieve files with their reference number.
+List filters: `event` and `registration_form` numeric IDs, exact `reference_number`, and `status`. Invalid filter values return 400. Results use the existing 25-item pagination. All staff/file responses are `private, no-store`. Anonymous, nonadministrator, nonstaff and unassigned users cannot read submission detail or change status. Lists are scoped before filters and pagination. Anonymous applicants cannot retrieve files with their reference number.
 
 ```http
 PATCH /api/admin/submissions/1f295c4d-6fb9-4fab-8f14-79755fedb8ee/status/
@@ -65,7 +65,7 @@ X-CSRFToken: <authenticated staff CSRF token>
 {"status":"under_review"}
 ```
 
-Allowed statuses: `submitted`, `under_review`, `shortlisted`, `approved`, `rejected`, `waitlisted`. Additional properties such as answers, applicant_email or files are rejected by this endpoint. The 200 response is the updated summary with reference, linked IDs, status and timestamps. Staff detail is required for PII and answers. Changes are audited with previous/new status, actor and time. Django Admin remains read-only for submitted data; use the staff API to change status.
+Allowed statuses: `submitted`, `under_review`, `shortlisted`, `approved`, `rejected`, `waitlisted`. Additional properties such as answers, applicant_email or files are rejected by this endpoint. The 200 response is the updated summary with reference, linked IDs, status and timestamps. Staff detail is required for PII and answers. Changes are audited with previous/new status, actor and time. Django Admin permits scoped, audited status review as a fallback; all other submitted data remains read-only.
 
 An uploaded payment receipt or transaction screenshot is **unverified evidence only**. Uploading it does not verify a payment, mark a submission paid, or approve an application. This backend does not integrate a payment provider or perform payment verification.
 
@@ -134,3 +134,7 @@ python manage.py test
 ```
 
 Before a future production release, run `python manage.py check --deploy` with actual Cloudinary, Redis and PostgreSQL configuration. Deployment checks flag missing private storage/shared rate limiting. Live provider delivery, real Redis multi-worker behavior, PostgreSQL concurrency and Heroku integration require separately provisioned infrastructure and were not executed locally. Cloudinary calls are mocked in tests; local uploads, real SQLite transactions, forced commit failures and data-preserving migrations are exercised.
+
+## Safe browser retries
+
+Optional `submission_key` is a UUID per application attempt. Identical retries return the original receipt, including after the form closes, without consuming another capacity slot or uploading files again. The server fingerprints the normalized contact email, version, answers and file metadata/bytes. Reusing a key with different data returns a generic validation error. There is no public reference lookup. Browser retry keys are not session credentials. Migration `0006` adds the nullable key/digest and per-form unique constraint; existing submissions remain intact.
