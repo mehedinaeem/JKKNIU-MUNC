@@ -7,7 +7,7 @@ export const fourthExecutiveCommittee = [
   },
   {
     "id": "exec-02",
-    "name": "Md Mehedi Hasan Nareem",
+    "name": "Md Mehedi Hasan Naeem",
     "position": "Senior Vice President",
     "image": "/executive-committee/transparent-webp/md-mehedi-hasan-nareem.webp"
   },
