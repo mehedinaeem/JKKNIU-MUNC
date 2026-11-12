@@ -25,7 +25,7 @@ class HealthTests(SimpleTestCase):
         for method in ('post', 'put', 'patch', 'delete'):
             self.assertEqual(getattr(self.client, method)('/api/health/').status_code, 405)
 
-    @override_settings(CORS_ALLOWED_ORIGINS=['http://localhost:5173'])
+    @override_settings(CORS_ALLOWED_ORIGINS=['http://localhost:5173'], CORS_ALLOW_CREDENTIALS=False)
     def test_allowed_cors_origin_and_preflight(self):
         response = self.client.options('/api/health/', HTTP_ORIGIN='http://localhost:5173',
                                        HTTP_ACCESS_CONTROL_REQUEST_METHOD='GET')
@@ -61,7 +61,12 @@ class DatabaseTests(TestCase):
 class EnvironmentTests(SimpleTestCase):
     def run_settings(self, **overrides):
         env = os.environ.copy()
-        for key in ('DEBUG', 'SECRET_KEY', 'ALLOWED_HOSTS', 'DATABASE_URL', 'DATABASE_SSL_REQUIRE', 'USE_SQLITE'):
+        from dotenv import dotenv_values
+        # Parent settings may have loaded a developer's .env into os.environ.
+        for key in set(dotenv_values(Path(__file__).resolve().parent.parent / '.env.example')) | {
+            'DEBUG', 'SECRET_KEY', 'ALLOWED_HOSTS', 'DATABASE_URL', 'DATABASE_SSL_REQUIRE', 'USE_SQLITE',
+            'AUTH_COOKIE_MODE', 'CORS_ALLOW_CREDENTIALS', 'SUBMISSION_STORAGE_PROVIDER',
+        }:
             env.pop(key, None)
         env.update(PYTHON_DOTENV_DISABLED='1', **overrides)
         return subprocess.run(

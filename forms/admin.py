@@ -1,3 +1,4 @@
+from accounts.admin_scopes import EventScopedAdminMixin
 import json
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
@@ -9,7 +10,7 @@ from .services import draft_schema, duplicate_form, publish_form
 
 
 @admin.register(RegistrationForm)
-class RegistrationFormAdmin(admin.ModelAdmin):
+class RegistrationFormAdmin(EventScopedAdminMixin, admin.ModelAdmin):
     list_display = ['title', 'event', 'form_type', 'status', 'capacity', 'submission_count']
     list_filter = ['status', 'form_type']
     search_fields = ['title', 'slug', 'event__title']
@@ -66,9 +67,10 @@ class RegistrationFormAdmin(admin.ModelAdmin):
 
 
 @admin.register(FormField)
-class FormFieldAdmin(admin.ModelAdmin):
+class FormFieldAdmin(EventScopedAdminMixin, admin.ModelAdmin):
+    event_path = 'form__event_id'
     list_display = ['key', 'label', 'form', 'field_type', 'required', 'display_order']
-    list_filter = ['field_type', 'required', 'form']
+    list_filter = ['field_type', 'required']
     search_fields = ['key', 'label', 'form__title']
     autocomplete_fields = ['form']
 
@@ -91,7 +93,9 @@ class FormFieldAdmin(admin.ModelAdmin):
 
 
 @admin.register(FormVersion)
-class FormVersionAdmin(admin.ModelAdmin):
+class FormVersionAdmin(EventScopedAdminMixin, admin.ModelAdmin):
+    event_path = 'form__event_id'
+    read_for_reviewers = True
     list_display = ['form', 'number', 'published_at']
     readonly_fields = ['form', 'number', 'schema', 'published_at']
 

@@ -47,6 +47,14 @@ class DraftFormSerializer(RegistrationFormSerializer):
 
     def validate(self, attrs):
         fields = attrs.pop('fields', None)
+        request = self.context.get('request')
+        event = attrs.get('event') or (self.instance.event if self.instance else None)
+        if request and event:
+            from accounts.roles import can_manage_event
+            from rest_framework.exceptions import PermissionDenied
+            permission = 'club_forms.change_registrationform' if self.instance else 'club_forms.add_registrationform'
+            if not can_manage_event(request.user, event.pk, permission):
+                raise PermissionDenied('You cannot manage forms for this event.')
         attrs = super().validate(attrs)
         if attrs.get('status') == 'published':
             raise serializers.ValidationError({'status': 'Use the publish endpoint to publish a version.'})

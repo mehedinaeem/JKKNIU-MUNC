@@ -20,6 +20,14 @@ class ModelCleanMixin:
 
 
 class EventSerializer(ModelCleanMixin, serializers.ModelSerializer):
+    def validate(self, attrs):
+        from accounts.roles import is_super_admin
+        from rest_framework.exceptions import PermissionDenied
+        request = self.context.get('request')
+        if request and request.method in {'PATCH', 'PUT'} and 'organizer' in attrs and not is_super_admin(request.user):
+            raise PermissionDenied('Only a Super Admin can change the event organizer.')
+        return super().validate(attrs)
+
     class Meta:
         model = Event
         fields = ["id", "title", "slug", "short_description", "description", "event_type",

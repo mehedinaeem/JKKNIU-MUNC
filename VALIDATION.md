@@ -37,3 +37,17 @@ Not executed: live PostgreSQL migrations/integration, Heroku build/release/runti
 - Confirmed local private upload/download and production rejection of filesystem uploads. Tests use temporary storage, not committed uploads.
 - Frontend files were not modified during this work, and nothing was deployed.
 - Not executed: live PostgreSQL concurrency testing, external durable private-storage integration, or Heroku integration. These require unavailable infrastructure. Local database tests use SQLite; production submission concurrency relies on PostgreSQL row locking and conditional counter updates.
+
+## Part 4: public submissions and secure files
+
+- Applied `registrations/0003`, `0004`, and `0005` locally, including the data-preserving submission rename/backfill, public references, review state, file metadata, status audit and cleanup intent tables.
+- System checks passed; migration drift check reported no changes; no pending migrations remain.
+- Full suite: **64 tests passed**. Existing tests retain authenticated-route coverage; additional cases cover anonymous receipt privacy, duplicate email normalization, version errors, form admission limits, MIME/content/file errors, image/PDF uploads, private access, status authorization/auditing and CSRF, submission quotas, payload limits, provider calls and cleanup retries.
+- A real SQLite transaction test forces a commit failure after a mocked successful upload and verifies rollback of submission/files/capacity plus compensating provider deletion.
+- Migration test creates an old-format submission/file/version, migrates forward, and verifies preserved ID, answers, timestamps, version/file links and backfilled contact/reference/event/form data.
+- Cloudinary SDK calls are mocked, with authenticated/raw upload parameters asserted. Signed downloads are fetched server-side; tests confirm no provider redirect/public file URL or applicant data in public receipts.
+- Failed cleanup is retained as a retryable intent; the cleanup command is tested, including protection for committed assets.
+- `pip check`: no broken requirements. `git diff --check`: passed.
+- `check --deploy` with synthetic nonsecret Cloudinary/Redis/PostgreSQL configuration had no errors. The two earlier HSTS advisory warnings (W005/W021) remain intentional. This verifies configuration shape, not provider credentials or network connectivity.
+- Not executed: live Cloudinary uploads/private delivery, actual shared Redis integration, PostgreSQL concurrent submission testing, or Heroku deployment/runtime checks. No real infrastructure/credentials were supplied, and nothing was deployed.
+- Frontend files and archive content were not changed during this work. Existing unrelated frontend/Netlify edits were preserved.

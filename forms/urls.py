@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from registrations.views import PrivateFileDownload
 
 app_name = 'forms'
 urlpatterns = [
@@ -11,5 +12,5 @@ urlpatterns = [
     path('admin/forms/<int:pk>/preview/', views.StaffFormPreview.as_view(), name='preview'),
     path('admin/forms/<int:pk>/publish/', views.StaffFormPublish.as_view(), name='publish'),
     path('admin/forms/<int:pk>/duplicate/', views.StaffFormDuplicate.as_view(), name='duplicate'),
-    path('submission-files/<int:pk>/', views.SubmissionFileDownload.as_view(), name='file-download'),
+    path('submission-files/<int:pk>/', PrivateFileDownload.as_view(), name='file-download'),
 ]

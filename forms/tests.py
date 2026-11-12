@@ -20,12 +20,25 @@ from forms.validation import validate_answers
 from registrations.models import Submission, SubmissionFile
 
 
+def pdf_bytes():
+    from io import BytesIO
+    from pypdf import PdfWriter
+    output = BytesIO()
+    writer = PdfWriter()
+    writer.add_blank_page(width=100, height=100)
+    writer.write(output)
+    return output.getvalue()
+
+
+@override_settings(DEBUG=True, SUBMISSION_RATE_PER_MINUTE=1000, SUBMISSION_RATE_PER_HOUR=1000, SUBMISSION_EMAIL_RATE_PER_HOUR=1000)
 class DynamicFormTests(TestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.client = APIClient()
-        self.staff = get_user_model().objects.create_user(username='form-staff', is_staff=True)
-        self.user = get_user_model().objects.create_user(username='applicant')
-        self.other = get_user_model().objects.create_user(username='other-applicant')
+        self.staff = get_user_model().objects.create_user(username='form-staff', is_staff=True, is_superuser=True)
+        self.user = get_user_model().objects.create_user(username='applicant', email='applicant@example.com')
+        self.other = get_user_model().objects.create_user(username='other-applicant', email='other@example.com')
         self.event = Event.objects.create(title='Future', slug='future', status='published',
             event_type='custom', start_date=timezone.now() + timedelta(days=20))
         self.form = RegistrationForm.objects.create(event=self.event, title='Application', slug='application', form_type='custom')
@@ -231,11 +244,11 @@ class DynamicFormTests(TestCase):
             required=True, allowed_extensions=['pdf'], max_file_size=1024)
         self.publish()
         from registrations.models import PrivateUploadStorage
-        with tempfile.TemporaryDirectory() as directory, patch.object(PrivateUploadStorage, 'location', directory):
+        with tempfile.TemporaryDirectory() as directory, override_settings(LOCAL_PRIVATE_UPLOAD_ROOT=directory):
             self.client.force_authenticate(self.user)
             response = self.client.post('/api/forms/application/submissions/', {
                 'payload': '{"version":1,"answers":{"name":"Valid"}}',
-                'document': SimpleUploadedFile('application.pdf', b'%PDF-demo', content_type='application/pdf'),
+                'document': SimpleUploadedFile('application.pdf', pdf_bytes(), content_type='application/pdf'),
             }, format='multipart')
             self.assertEqual(response.status_code, 201, response.data)
             stored = SubmissionFile.objects.get()
