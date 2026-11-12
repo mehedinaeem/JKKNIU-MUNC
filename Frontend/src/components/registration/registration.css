@@ -1,0 +1,13 @@
+.registration-page { overflow-wrap: anywhere; }
+.registration-panel { @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8; }
+.registration-control { @apply block min-h-12 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-primary-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100 disabled:bg-slate-100 disabled:text-slate-500; }
+.registration-control[aria-invalid='true'] { @apply border-red-500 focus:ring-red-100; }
+.registration-page :is(input, textarea, select, button, a) { scroll-margin-top: 7rem; }
+.registration-page :is(input, textarea, select, button, a):focus-visible { outline: 2px solid #1e40af; outline-offset: 3px; }
+.registration-page :is(input[type='checkbox'], input[type='radio']) { @apply h-5 w-5 shrink-0 accent-primary-700; }
+.registration-choice { @apply flex min-h-12 items-start gap-3 rounded-xl border border-slate-200 p-4 text-sm leading-6 transition has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50; }
+.registration-error { @apply mt-2 text-sm leading-6 text-red-700; }
+@media print {
+  body:has(.registration-confirmation) :is(nav, footer, .registration-no-print) { display: none !important; }
+  .registration-confirmation { padding-top: 1rem !important; }
+}

@@ -1,0 +1,23 @@
+import { SUPPORTED_TYPES } from './validation';
+
+export default function DynamicQuestion({ field, index, value, file, onChange, onFile, error, contact = false }) {
+    const id = `answer-${field.key}`;
+    const hintId = `${id}-hint`, errorId = `${id}-error`;
+    const described = [field.help_text || contact ? hintId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
+    const rules = field.validation || {};
+    const common = { id, name: field.key, required: field.required, 'aria-invalid': !!error || undefined, 'aria-describedby': described, placeholder: field.placeholder, className: 'registration-control' };
+    const multi = ['radio', 'checkboxes'].includes(field.field_type);
+    let control;
+    if (!SUPPORTED_TYPES.includes(field.field_type)) control = <p className="registration-error">This question cannot be displayed. Please contact the organisers.</p>;
+    else if (multi) control = <div className="space-y-3">{field.options.map((option, optionIndex) => <label key={option.value} className="registration-choice"><input className="mt-0.5" type={field.field_type === 'radio' ? 'radio' : 'checkbox'} name={field.key} id={`${id}-${optionIndex}`} value={option.value} aria-describedby={described} aria-invalid={!!error || undefined} required={field.field_type === 'radio' && field.required} checked={field.field_type === 'radio' ? value === option.value : Array.isArray(value) && value.includes(option.value)} onChange={event => onChange(field.field_type === 'radio' ? option.value : event.target.checked ? [...(Array.isArray(value) ? value : []), option.value] : value.filter(choice => choice !== option.value))} /><span className="min-w-0 break-words">{option.label}</span></label>)}</div>;
+    else if (field.field_type === 'dropdown') control = <select {...common} value={value ?? ''} onChange={event => onChange(event.target.value)}><option value="">{field.placeholder || 'Select an option'}</option>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>;
+    else if (field.field_type === 'consent') control = <label className="registration-choice"><input id={id} className="mt-0.5" type="checkbox" name={field.key} required={field.required} checked={value === true} aria-describedby={described} aria-invalid={!!error || undefined} onChange={event => onChange(event.target.checked)} /><span>I agree</span></label>;
+    else if (field.field_type === 'file') control = <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4"><input {...common} type="file" accept={field.allowed_extensions.map(extension => `.${extension}`).join(',')} onChange={event => onFile(event.target.files?.[0] || null)} /><p className="mt-3 text-xs leading-6 text-slate-500">{field.allowed_extensions.map(extension => extension.toUpperCase()).join(', ')} · maximum {field.max_file_size / 1048576} MiB</p>{file && <p className="mt-2 break-all text-xs font-medium text-primary-700">Selected: {file.name} ({(file.size / 1048576).toFixed(2)} MiB)</p>}</div>;
+    else if (field.field_type === 'long_text') control = <textarea {...common} rows={5} value={value ?? ''} minLength={rules.min_length} maxLength={rules.max_length ?? 100000} onChange={event => onChange(event.target.value)} />;
+    else control = <input {...common} type={{ email: 'email', phone: 'tel', integer: 'number', decimal: 'number', date: 'date', url: 'url' }[field.field_type] || 'text'} value={value ?? ''} step={field.field_type === 'decimal' ? 'any' : field.field_type === 'integer' ? '1' : undefined} autoComplete={field.field_type === 'email' ? 'email' : field.field_type === 'phone' ? 'tel' : undefined} min={field.field_type === 'date' ? rules.min_date : rules.min_value} max={field.field_type === 'date' ? rules.max_date : rules.max_value} minLength={rules.min_length} maxLength={rules.max_length ?? 10000} onChange={event => onChange(event.target.value)} />;
+    return <fieldset id={`question-${field.key}`} aria-describedby={described} className="min-w-0 space-y-3 border-b border-slate-100 pb-7 last:border-0">
+        <legend className="mb-3 text-sm font-semibold leading-7 text-primary-900">{index + 1}. {multi ? field.label : <label htmlFor={id}>{field.label}</label>}{field.required && <span className="ml-1 text-red-600" aria-hidden="true">*</span>}{field.required && <span className="sr-only"> (required)</span>}</legend>
+        {(field.help_text || contact) && <p id={hintId} className="whitespace-pre-wrap text-sm leading-6 text-slate-500">{field.help_text}{contact && <span className="block">We will use this email address for your application.</span>}</p>}
+        {control}{error && <p id={errorId} className="registration-error" role="alert">{error}</p>}
+    </fieldset>;
+}

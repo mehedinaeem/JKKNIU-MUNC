@@ -6,11 +6,12 @@ import EventImage from '../components/events/EventImage';
 import EventGallery from '../components/events/EventGallery';
 import { displayDate, newestFirst } from '../components/events/eventUtils';
 import '../components/events/events.css';
+import ManagedEventDetails from '../components/events/ManagedEventDetails';
 
 const detailFields = ['venue', 'mode', 'participants', 'speakers', 'guests', 'awards', 'partners', 'highlights'];
 const orderedEvents = [...events].sort(newestFirst);
 
-export default function EventDetailsPage() {
+function HistoricalEventDetails() {
     const { slug } = useParams();
     const event = events.find(item => item.slug === slug);
     const heading = useRef(null);
@@ -97,4 +98,10 @@ export default function EventDetailsPage() {
             </nav>
         </div>
     </article>;
+}
+
+
+export default function EventDetailsPage() {
+    const { slug } = useParams();
+    return events.some(event => event.slug === slug) ? <HistoricalEventDetails /> : <ManagedEventDetails key={slug} slug={slug} />;
 }

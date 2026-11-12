@@ -1,3 +1,5 @@
+import './services/navigationGuard';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -7,6 +9,14 @@ import EventDetailsPage from './pages/EventDetailsPage';
 import GalleryPage from './pages/GalleryPage';
 import ContactPage from './pages/ContactPage';
 
+const AdminApp = lazy(() => import('./pages/admin/AdminApp'));
+const EventRegistrationPage = lazy(() => import('./pages/registration/EventRegistrationPage'));
+const EventRegistrationFormPage = lazy(() => import('./pages/registration/EventRegistrationFormPage'));
+const RegistrationConfirmationPage = lazy(() => import('./pages/registration/RegistrationConfirmationPage'));
+function RegistrationRoute({ children }) {
+  return <Suspense fallback={<div role="status" className="pt-32 text-center">Loading registration…</div>}>{children}</Suspense>;
+}
+
 /**
  * App Component
  * Main application component with React Router configuration
@@ -15,6 +25,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/admin/*" element={<Suspense fallback={<div role="status" className="p-8 text-center text-primary-900">Loading administration…</div>}><AdminApp /></Suspense>} />
         {/* All routes wrapped in Layout component */}
         <Route path="/" element={<Layout />}>
           {/* Home Page - Default route */}
@@ -26,6 +37,10 @@ function App() {
           {/* Events Page */}
           <Route path="events" element={<EventsPage />} />
           <Route path="events/:slug" element={<EventDetailsPage />} />
+
+          <Route path="events/:slug/register" element={<RegistrationRoute><EventRegistrationPage /></RegistrationRoute>} />
+          <Route path="events/:slug/register/:formSlug" element={<RegistrationRoute><EventRegistrationFormPage /></RegistrationRoute>} />
+          <Route path="events/:slug/register/:formSlug/confirmation" element={<RegistrationRoute><RegistrationConfirmationPage /></RegistrationRoute>} />
 
           {/* Gallery Page */}
           <Route path="gallery" element={<GalleryPage />} />

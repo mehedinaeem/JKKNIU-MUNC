@@ -34,6 +34,7 @@ export default function EventCard({ event, index }) {
                     <span className="event-card-action">View details <span aria-hidden="true">↗</span></span>
                 </div>
             </Link>
+            {event.registrationSlug && <Link to={`/events/${event.registrationSlug}/register`} className="btn-primary mt-3 block text-center" aria-label={`Register for ${event.title}`}>Register now <span aria-hidden="true">→</span></Link>}
         </article>
     );
 }
