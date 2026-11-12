@@ -47,6 +47,9 @@ def publish_form(form_id):
         raise ValidationError({'fields': 'At most 100 fields are supported.'})
     if not schema['fields']:
         raise ValidationError({'fields': 'Add at least one field before publishing.'})
+    from django.conf import settings
+    if sum(field['field_type'] == 'file' and field['required'] for field in schema['fields']) > settings.DATA_UPLOAD_MAX_NUMBER_FILES:
+        raise ValidationError({'fields': 'Required file fields exceed the supported files per submission.'})
     validator = FormFieldSerializer(data=schema['fields'], many=True)
     validator.is_valid(raise_exception=True)
     from django.core.exceptions import ValidationError as ModelValidationError
@@ -88,46 +91,7 @@ def availability_error(form, now=None):
     return None
 
 
-@transaction.atomic
 def submit_form(form_id, user, version_number, answers, files=None):
-    # Serializing on the form prevents both over-capacity and duplicate concurrent submissions.
-    form = RegistrationForm.objects.select_for_update().select_related('event').get(pk=form_id)
-    from events.models import Event
-    form.event = Event.objects.select_for_update().get(pk=form.event_id)
-    error = availability_error(form)
-    if error:
-        raise ValidationError({'form': error})
-    version = form.versions.first()
-    if version.number != version_number:
-        raise ValidationError({'version': 'The form has changed. Reload the published form.'})
-    from registrations.models import Submission, SubmissionFile
-    if not form.allow_multiple_submissions and Submission.objects.filter(version__form=form, submitted_by=user).exists():
-        raise ValidationError({'form': 'You have already submitted this form.'})
-    clean, uploads = validate_answers(version.schema, answers, files)
-    if sum(upload.size for upload in uploads.values()) > 20 * 1024 * 1024:
-        raise ValidationError({'files': 'Total file size cannot exceed 20 MiB.'})
-    # Local private storage is development-only; fail closed until durable private storage is configured.
-    from django.conf import settings
-    from django.core.files.storage import FileSystemStorage, storages
-    if uploads and not settings.DEBUG and isinstance(storages['private_uploads'], FileSystemStorage):
-        raise ValidationError({'files': 'File submissions require durable private storage configuration before production use.'})
-    # A conditional write also guards capacity when using SQLite, which has no row locks.
-    from django.db.models import F, Q
-    claimed = RegistrationForm.objects.filter(pk=form.pk).filter(
-        Q(capacity__isnull=True) | Q(submission_count__lt=F('capacity'))
-    ).update(submission_count=F('submission_count') + 1)
-    if not claimed:
-        raise ValidationError({'form': 'This form has reached capacity.'})
-    submission = Submission.objects.create(version=version, submitted_by=user, answers=clean)
-    saved_files = []
-    try:
-        for key, upload in uploads.items():
-            item = SubmissionFile(submission=submission, field_key=key)
-            item.file.save(upload.name, upload, save=False)
-            saved_files.append(item.file)
-            item.save()
-    except Exception:
-        for stored in saved_files:
-            stored.delete(save=False)
-        raise
-    return submission
+    """Compatibility entry point for the existing authenticated submission API."""
+    from registrations.services import submit_application
+    return submit_application(form_id, user.email, version_number, answers, files, user=user)

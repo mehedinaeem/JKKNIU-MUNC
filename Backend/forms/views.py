@@ -1,17 +1,15 @@
-import json
-from pathlib import Path
 from django.db import IntegrityError
-from django.http import FileResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
-from rest_framework.exceptions import ValidationError, PermissionDenied
-from rest_framework.parsers import JSONParser, MultiPartParser
+from rest_framework.exceptions import ValidationError
+from registrations.parsers import BoundedJSONParser, BoundedMultipartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from events.models import Event
-from events.permissions import IsAuthenticatedStaff
+from accounts.permissions import EventManagementPermission
+from accounts.roles import scope_queryset
 from .models import RegistrationForm
 from .serializers import DraftFormSerializer, DuplicateFormSerializer, SubmissionInputSerializer
 from .services import availability_error, draft_schema, duplicate_form, publish_form, submit_form
@@ -48,38 +46,42 @@ class PublicFormDetail(APIView):
 
 
 class StaffFormCreate(generics.CreateAPIView):
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
     serializer_class = DraftFormSerializer
 
 
 class StaffFormDetail(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
     serializer_class = DraftFormSerializer
-    queryset = RegistrationForm.objects.prefetch_related('fields')
+    def get_queryset(self):
+        return scope_queryset(RegistrationForm.objects.prefetch_related('fields'), self.request.user)
+
     http_method_names = ['get', 'patch', 'head', 'options']
 
 
 class StaffFormPreview(APIView):
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
 
     def get(self, request, pk):
-        return Response({'draft': True, 'schema': draft_schema(get_object_or_404(RegistrationForm, pk=pk))})
+        return Response({'draft': True, 'schema': draft_schema(get_object_or_404(scope_queryset(RegistrationForm.objects.all(), request.user), pk=pk))})
 
 
 class StaffFormPublish(APIView):
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
+    permission_action = 'change'
 
     def post(self, request, pk):
-        get_object_or_404(RegistrationForm, pk=pk)
+        get_object_or_404(scope_queryset(RegistrationForm.objects.all(), request.user), pk=pk)
         version = publish_form(pk)
         return Response({'id': version.form_id, 'version': version.number, 'schema': version.schema}, status=201)
 
 
 class StaffFormDuplicate(APIView):
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
+    permission_action = 'add'
 
     def post(self, request, pk):
-        get_object_or_404(RegistrationForm, pk=pk)
+        get_object_or_404(scope_queryset(RegistrationForm.objects.all(), request.user), pk=pk)
         serializer = DuplicateFormSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
@@ -91,19 +93,18 @@ class StaffFormDuplicate(APIView):
 
 class FormSubmit(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [JSONParser, MultiPartParser]
+    parser_classes = [BoundedJSONParser, BoundedMultipartParser]
+
+    def get_throttles(self):
+        from registrations.throttles import SubmissionIPThrottle
+        return [SubmissionIPThrottle()]
 
     def post(self, request, form_slug):
+        from registrations.throttles import throttle_email
+        throttle_email(request.user.email.strip().casefold())
         form = public_form(form_slug)
-        if request.content_type.startswith('multipart/'):
-            try:
-                payload = json.loads(request.POST.get('payload', ''))
-            except (ValueError, TypeError):
-                raise ValidationError({'payload': 'Expected JSON containing version and answers.'})
-            if any(len(request.FILES.getlist(key)) != 1 for key in request.FILES):
-                raise ValidationError({'files': 'Only one upload per file field is supported.'})
-        else:
-            payload = request.data
+        from registrations.views import submission_payload
+        payload = submission_payload(request)
         serializer = SubmissionInputSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
         submission = submit_form(form.pk, request.user, serializer.validated_data['version'],
@@ -113,18 +114,3 @@ class FormSubmit(APIView):
                          'files': [{'field_key': item.field_key,
                                     'download_url': reverse('forms:file-download', kwargs={'pk': item.pk})}
                                    for item in submission.files.all()]}, status=201)
-
-
-class SubmissionFileDownload(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        from registrations.models import SubmissionFile
-        item = get_object_or_404(SubmissionFile.objects.select_related('submission'), pk=pk)
-        if item.submission.submitted_by_id != request.user.pk and not request.user.is_staff:
-            raise PermissionDenied()
-        response = FileResponse(item.file.open('rb'), as_attachment=True, filename='answer' + Path(item.file.name).suffix,
-                                content_type='application/octet-stream')
-        response['Cache-Control'] = 'private, no-store'
-        response['X-Content-Type-Options'] = 'nosniff'
-        return response

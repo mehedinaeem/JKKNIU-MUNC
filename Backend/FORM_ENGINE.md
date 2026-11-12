@@ -26,7 +26,7 @@ The existing globally unique form slug avoids collisions between events. A slug 
 | POST | `/api/forms/{form_slug}/submissions/` | Authenticated applicant submits answers; 201 |
 | GET | `/api/submission-files/{id}/` | Applicant owner or staff downloads private attachment |
 
-Staff writes require an active authenticated staff session and a valid CSRF token. Submissions require an authenticated user so duplicate prevention has a reliable identity. There is no anonymous identity heuristic or new account/login API. Same-origin Django session authentication is retained; cross-origin Netlify login is not added. Django Admin supports field editing/order, JSON preview, publish/close/archive/duplicate actions, and read-only submission review.
+Staff writes require an active authenticated staff session and a valid CSRF token. Anonymous submissions are now supported at `/api/forms/{slug}/submit/` with a required applicant email; see [SUBMISSIONS.md](SUBMISSIONS.md). The older `/submissions/` route retains authenticated access. There is no new account/login API. Same-origin Django session authentication is retained; cross-origin Netlify login is not added. Django Admin supports field editing/order, JSON preview, publish/close/archive/duplicate actions, and read-only submission review.
 
 Public unpublished forms/events return 404. Closed/archived forms are also hidden. A published form outside its window or at capacity is readable with `accepting_submissions: false`; its submission endpoint returns 400. Field errors return 400, unauthorized sessions 403, missing objects 404. Public form lists use the configured 25-item pagination.
 
@@ -121,7 +121,7 @@ Email/phone/URL strings also have a 1,000-character safety ceiling. Numbers must
 
 Selection options are objects with exactly `value` and `label`, each nonempty strings of at most 255 characters. Values must be unique; there may be at most 200 options. Defaults, where supported, must pass the same type/rule/option validation. File/consent defaults are forbidden. Defaults are presentation hints, never substituted for a missing required answer or preaccepted consent. Empty optional answers are omitted; unknown answer keys and duplicate checkbox choices are rejected.
 
-## Submission and admission rules
+## Existing authenticated submission route
 
 Example `POST /api/forms/conference-2027-delegates/submissions/`:
 
@@ -153,23 +153,9 @@ Admission requires published event/form plus a published version. Opening bounds
 
 PostgreSQL row locks serialize submission/publish/draft writes for each form, and event locks protect admission checks. An atomic conditional capacity increment is rolled back if submission persistence fails. Duplicate prevention spans all versions of a form for the same authenticated account, unless multiple submissions are enabled. Administrative metadata saves cannot overwrite the internal submission counter. Capacity is per form, not per event/version; decreasing capacity below existing count stops new submissions. There is no cancellation/retraction endpoint in this phase. SQLite is for local development; multi-writer deployment requires PostgreSQL.
 
-## File answers
+## Public submissions, staff review and private files
 
-File definitions require allowed_extensions and max_file_size (bytes). Supported extensions are pdf, png, jpg, jpeg, txt, csv, docx, xlsx and odt. Maximum per file is 10 MiB and total per submission is 20 MiB. Extension checks are case-insensitive; empty/oversized files are rejected. Only one upload per file question is accepted.
-
-Submit multipart data with a text part named `payload` holding the JSON version/answers object, plus file parts named after stable question keys:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/forms/example/submissions/ \
-  -b '<authenticated session cookies>' \
-  -H 'X-CSRFToken: <csrf token>' \
-  -F 'payload={"version":1,"answers":{"full_name":"Example"}}' \
-  -F 'document=@./application.pdf'
-```
-
-JSON answers must not also contain the same file key. A successful response includes each file key and an authenticated relative download_url. Files use randomized stored filenames under ignored `Backend/private_uploads/` locally. There is no public media route, and the download endpoint sends attachment/octet-stream, nosniff and private/no-store headers. File extensions do not prove content safety; this implementation does not claim malware scanning or parse user documents.
-
-**Heroku:** production rejects filesystem-backed file answers to prevent silent data loss. Configure `PRIVATE_UPLOAD_STORAGE_BACKEND` with a durable private Django storage backend and optional `PRIVATE_UPLOAD_STORAGE_OPTIONS` as a JSON object. Install that backend's required package and keep bucket/container ACLs private; provision credentials separately. All downloads continue through the authorized endpoint. No external storage service, paid dependency, credentials, or deployment was added. The selected storage backend's privacy/durability remains a deployment responsibility. Non-file submissions work without storage provisioning. Configure platform request-body limits appropriate to the upload policy before production exposure.
+See [SUBMISSIONS.md](SUBMISSIONS.md) for the current public `/submit/` API, staff review/status endpoints, image/PDF content validation, private authenticated Cloudinary delivery, rate limits and retryable cleanup. Supported file extensions are now restricted to pdf/png/jpg/jpeg; earlier text/office document extensions are no longer accepted. The legacy storage alias is retained for historical reads only. New local files use private temporary storage, and new production files require Cloudinary.
 
 ## Validation
 

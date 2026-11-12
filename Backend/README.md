@@ -31,7 +31,7 @@ The existing frontend can independently run with `cd Frontend && npm run dev` fr
 fetch('http://127.0.0.1:8000/api/health/').then(response => response.json())
 ```
 
-The API allows `http://localhost:5173` in development. Origins include scheme and port; add any other local origins explicitly. CORS does not authenticate users. Cross-origin cookies are disabled. Django admin uses same-origin session authentication and CSRF protection. A future Netlify authentication flow needs its own explicit design; no new login/account-registration endpoints are exposed. Authenticated form submissions are available as described in [FORM_ENGINE.md](FORM_ENGINE.md).
+The API allows `http://localhost:5173` in development. Origins include scheme and port; add any other local origins explicitly. CORS does not authenticate users. Cross-origin cookies are disabled. Django admin uses same-origin session authentication and CSRF protection. A future Netlify authentication flow needs its own explicit design; no new login/account-registration endpoints are exposed. Anonymous form submissions and staff review are documented in [SUBMISSIONS.md](SUBMISSIONS.md); the existing authenticated route remains available.
 
 ## Event management
 
@@ -40,6 +40,10 @@ See [EVENT_API.md](EVENT_API.md) for models, staff authentication, filtering, re
 ## Dynamic forms
 
 See [FORM_ENGINE.md](FORM_ENGINE.md) for editable database schemas, immutable published versions, server-side answer validation, form administration, submissions and private uploads.
+
+## Public submissions and private uploads
+
+See [SUBMISSIONS.md](SUBMISSIONS.md) for public reference receipts, staff review/status APIs, Cloudinary and Redis environment variables, upload validation and `cleanup_uploads` operations. Production submissions require shared Redis rate limits; production uploads require authenticated Cloudinary storage.
 
 ## Environment
 
@@ -64,7 +68,7 @@ Heroku must receive **the contents of Backend as its application root**, with `r
 
 Provision PostgreSQL separately when ready and configure `DATABASE_URL`, a securely managed production `SECRET_KEY`, `DEBUG=False`, `ALLOWED_HOSTS=<exact-backend-host>`, `CORS_ALLOWED_ORIGINS=https://<actual-netlify-or-custom-domain>`, and the appropriate `CSRF_TRUSTED_ORIGINS` using actual HTTPS origins. Never use broad `*.netlify.app` allowances. Leave `DATABASE_SSL_REQUIRE` unset or true. No real domains or credentials are assumed here.
 
-Heroku's Python buildpack installs the pinned requirements and runs Django static collection. WhiteNoise serves backend/admin static files, not frontend assets. The Procfile release phase applies migrations; the web phase starts Gunicorn on `$PORT`. Database failures stop the release. Do not store persistent data or uploads on Heroku's ephemeral filesystem. Dynamic file answers use private development storage; production requires a separately configured durable private storage backend. No paid service integration has been provisioned.
+Heroku's Python buildpack installs the pinned requirements and runs Django static collection. WhiteNoise serves backend/admin static files, not frontend assets. The Procfile release phase applies migrations; the web phase starts Gunicorn on `$PORT`. Database failures stop the release. Do not store persistent data or uploads on Heroku's ephemeral filesystem. Dynamic file answers use private temporary development storage; production requires configured authenticated Cloudinary storage and shared Redis throttling. No paid service integration has been provisioned.
 
 Before a future release, run `python manage.py check --deploy` with the actual production environment and review pending migrations. The health probe does not confirm database availability. Set up platform logging, backups and monitoring when infrastructure is provisioned.
 

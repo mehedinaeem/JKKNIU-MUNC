@@ -16,7 +16,7 @@ from forms.serializers import RegistrationFormSerializer
 class EventAPITests(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.staff = get_user_model().objects.create_user(username='staff', is_staff=True)
+        self.staff = get_user_model().objects.create_user(username='staff', is_staff=True, is_superuser=True)
         self.member = get_user_model().objects.create_user(username='member')
         self.start = timezone.now() + timedelta(days=30)
         self.event = Event.objects.create(title='Public conference', slug='public-conference',
@@ -110,7 +110,7 @@ class EventAPITests(TestCase):
         self.client.force_authenticate(self.staff)
         self.assertEqual(self.client.post('/api/events/', self.payload(), format='json').status_code, 405)
         self.assertEqual(self.client.put(f'/api/admin/events/{self.event.pk}/', self.payload(), format='json').status_code, 405)
-        self.assertEqual(self.client.get(f'/api/admin/events/{self.event.pk}/').status_code, 405)
+        self.assertEqual(self.client.get(f'/api/admin/events/{self.event.pk}/').status_code, 200)
         self.assertEqual(self.client.patch('/api/admin/events/999999/', {}, format='json').status_code, 404)
 
     def test_session_authentication_requires_csrf_on_write(self):

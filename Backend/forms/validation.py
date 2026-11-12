@@ -12,7 +12,7 @@ from rest_framework.exceptions import ValidationError
 TYPES = {'short_text', 'long_text', 'email', 'phone', 'integer', 'decimal', 'date',
          'dropdown', 'radio', 'checkboxes', 'file', 'url', 'consent'}
 SELECTION = {'dropdown', 'radio', 'checkboxes'}
-SAFE_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'txt', 'csv', 'docx', 'xlsx', 'odt'}
+SAFE_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 MAX_UPLOAD = 10 * 1024 * 1024
 MAX_FIELDS = 100
 
@@ -46,7 +46,8 @@ def validate_answer(field, value):
             invalid('File extension is not allowed.')
         if not 0 < value.size <= field['max_file_size']:
             invalid('File is empty or exceeds the size limit.')
-        return value
+        from registrations.file_validation import validate_upload
+        return validate_upload(value, field)
     if kind in {'short_text', 'long_text', 'email', 'phone', 'url'}:
         if not isinstance(value, str):
             invalid('Expected text.')

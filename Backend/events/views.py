@@ -3,7 +3,8 @@ from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import Event
-from .permissions import IsAuthenticatedStaff
+from accounts.permissions import EventManagementPermission
+from accounts.roles import scope_queryset
 from .serializers import EventQuerySerializer, EventSerializer
 
 
@@ -36,10 +37,16 @@ class PublicEventDetail(generics.RetrieveAPIView):
     lookup_field = "slug"
 
 
-class StaffEventCreate(generics.CreateAPIView):
+class StaffEventCreate(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
+    permission_model = "events.event"
+
+    super_admin_create = True
+
+    def get_queryset(self):
+        return scope_queryset(Event.objects.all(), self.request.user, 'pk')
 
     def perform_create(self, serializer):
         if "organizer" not in serializer.validated_data:
@@ -51,7 +58,14 @@ class StaffEventCreate(generics.CreateAPIView):
 class StaffEventDetail(generics.GenericAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-    permission_classes = [IsAuthenticatedStaff]
+    permission_classes = [EventManagementPermission]
+    permission_model = "events.event"
+
+    def get_queryset(self):
+        return scope_queryset(Event.objects.all(), self.request.user, 'pk')
+
+    def get(self, request, *args, **kwargs):
+        return Response(self.get_serializer(self.get_object()).data)
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -61,5 +75,9 @@ class StaffEventDetail(generics.GenericAPIView):
         return Response(serializer.data)
 
     def delete(self, request, *args, **kwargs):
-        self.get_object().delete()
+        from django.db.models.deletion import ProtectedError
+        try:
+            self.get_object().delete()
+        except ProtectedError:
+            return Response({'detail': 'Archive this event; published forms and submissions must be retained.'}, status=409)
         return Response(status=204)

@@ -1,6 +1,8 @@
 """Environment-driven settings for the independent Django API."""
 import os
 import json
+import tempfile
+from urllib.parse import urlsplit, unquote
 from pathlib import Path
 
 import dj_database_url
@@ -33,7 +35,7 @@ if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
     raise ImproperlyConfigured("ALLOWED_HOSTS must contain explicit hostnames")
 
 INSTALLED_APPS = [
-    "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
+    "accounts.apps.RoleAdminConfig", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "corsheaders", "accounts.apps.AccountsConfig",
     "events.apps.EventsConfig", "forms.apps.FormsConfig",
@@ -44,6 +46,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "accounts.middleware.AdminNoStoreMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -131,6 +134,76 @@ REST_FRAMEWORK = {
 }
 LOGGING = {
     "version": 1, "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "handlers": {"console": {"class": "logging.StreamHandler"}, "null": {"class": "logging.NullHandler"}},
+    "loggers": {name: {"handlers": ["null"], "propagate": False} for name in ("pypdf", "cloudinary")},
     "root": {"handlers": ["console"], "level": "INFO"},
 }
+
+# Anonymous submission admission and private storage.
+REDIS_URL = os.getenv('REDIS_URL', '').strip()
+CACHES = {'default': (
+    {'BACKEND': 'django.core.cache.backends.redis.RedisCache', 'LOCATION': REDIS_URL}
+    if REDIS_URL else {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'submission-limits'}
+)}
+REST_FRAMEWORK['NUM_PROXIES'] = int(os.getenv('TRUSTED_PROXY_COUNT', '0' if DEBUG else '1'))
+SUBMISSION_RATE_PER_MINUTE = int(os.getenv('SUBMISSION_RATE_PER_MINUTE', '5'))
+SUBMISSION_RATE_PER_HOUR = int(os.getenv('SUBMISSION_RATE_PER_HOUR', '30'))
+SUBMISSION_EMAIL_RATE_PER_HOUR = int(os.getenv('SUBMISSION_EMAIL_RATE_PER_HOUR', '5'))
+SUBMISSION_STORAGE_PROVIDER = os.getenv('SUBMISSION_STORAGE_PROVIDER', 'temporary' if DEBUG else 'cloudinary')
+if SUBMISSION_STORAGE_PROVIDER not in {'temporary', 'cloudinary'} or (not DEBUG and SUBMISSION_STORAGE_PROVIDER != 'cloudinary'):
+    raise ImproperlyConfigured('Production submissions require persistent private Cloudinary storage.')
+LOCAL_PRIVATE_UPLOAD_ROOT = os.getenv('LOCAL_PRIVATE_UPLOAD_ROOT', str(Path(tempfile.gettempdir()) / f'jkkniu-private-{os.getuid()}'))
+CLOUDINARY_CONFIG = {
+    'cloud_name': os.getenv('CLOUDINARY_CLOUD_NAME', ''),
+    'api_key': os.getenv('CLOUDINARY_API_KEY', ''),
+    'api_secret': os.getenv('CLOUDINARY_API_SECRET', ''),
+}
+if os.getenv('CLOUDINARY_URL'):
+    cloudinary_url = urlsplit(os.environ['CLOUDINARY_URL'])
+    if cloudinary_url.scheme != 'cloudinary':
+        raise ImproperlyConfigured('CLOUDINARY_URL must use the cloudinary scheme.')
+    CLOUDINARY_CONFIG = {'cloud_name': cloudinary_url.hostname, 'api_key': unquote(cloudinary_url.username or ''),
+                         'api_secret': unquote(cloudinary_url.password or '')}
+DATA_UPLOAD_MAX_NUMBER_FILES = 10
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 120
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+
+FILE_UPLOAD_HANDLERS = [
+    'registrations.parsers.UploadByteLimit',
+    'django.core.files.uploadhandler.MemoryFileUploadHandler',
+    'django.core.files.uploadhandler.TemporaryFileUploadHandler',
+]
+if min(SUBMISSION_RATE_PER_MINUTE, SUBMISSION_RATE_PER_HOUR, SUBMISSION_EMAIL_RATE_PER_HOUR) < 1:
+    raise ImproperlyConfigured('Submission rate limits must be positive integers.')
+if REST_FRAMEWORK['NUM_PROXIES'] < 0:
+    raise ImproperlyConfigured('TRUSTED_PROXY_COUNT cannot be negative.')
+
+
+# Session authentication: proxy first; cross-site cookies require an explicit secure opt-in.
+AUTH_COOKIE_MODE = os.getenv('AUTH_COOKIE_MODE', 'proxy')
+if AUTH_COOKIE_MODE not in {'proxy', 'cross_site'}:
+    raise ImproperlyConfigured('AUTH_COOKIE_MODE must be proxy or cross_site.')
+SESSION_COOKIE_NAME = 'jkkniu_admin_session'
+CSRF_COOKIE_NAME = 'jkkniu_csrf'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_DOMAIN = None
+CSRF_COOKIE_DOMAIN = None
+SESSION_COOKIE_SAMESITE = 'None' if AUTH_COOKIE_MODE == 'cross_site' else 'Lax'
+CSRF_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
+SESSION_COOKIE_AGE = int(os.getenv('ADMIN_SESSION_MAX_AGE', '28800'))
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = False
+CSRF_FAILURE_VIEW = 'accounts.views.csrf_failure'
+CORS_ALLOW_CREDENTIALS = env_bool('CORS_ALLOW_CREDENTIALS', DEBUG or AUTH_COOKIE_MODE == 'cross_site')
+if AUTH_COOKIE_MODE == 'cross_site':
+    if DEBUG or not CORS_ALLOW_CREDENTIALS or not CORS_ALLOWED_ORIGINS:
+        raise ImproperlyConfigured('Cross-site sessions require production HTTPS and explicit credentialed CORS origins.')
+    if any(not origin.startswith('https://') or '*' in origin or origin not in CSRF_TRUSTED_ORIGINS for origin in CORS_ALLOWED_ORIGINS):
+        raise ImproperlyConfigured('Cross-site CORS origins must be exact HTTPS CSRF-trusted origins.')
+LOGIN_RATE_PER_MINUTE = int(os.getenv('LOGIN_RATE_PER_MINUTE', '10'))
+LOGIN_RATE_PER_HOUR = int(os.getenv('LOGIN_RATE_PER_HOUR', '100'))
+LOGIN_USERNAME_RATE_PER_15_MINUTES = int(os.getenv('LOGIN_USERNAME_RATE_PER_15_MINUTES', '10'))
+if min(LOGIN_RATE_PER_MINUTE, LOGIN_RATE_PER_HOUR, LOGIN_USERNAME_RATE_PER_15_MINUTES, SESSION_COOKIE_AGE) < 1:
+    raise ImproperlyConfigured('Login limits and session age must be positive integers.')

@@ -1,9 +1,4 @@
-from rest_framework.permissions import BasePermission
+"""Compatibility import; staff flags alone no longer grant administration access."""
+from accounts.permissions import IsAdministrator
 
-
-class IsAuthenticatedStaff(BasePermission):
-    message = "An authenticated, active staff account is required."
-
-    def has_permission(self, request, view):
-        user = request.user
-        return bool(user and user.is_authenticated and user.is_active and user.is_staff)
+IsAuthenticatedStaff = IsAdministrator
