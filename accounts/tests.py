@@ -111,6 +111,17 @@ class AuthenticationTests(TestCase):
         response = self.client.post('/api/admin/auth/logout/', {}, format='json', HTTP_X_CSRFTOKEN=old_token)
         self.assertEqual(response.status_code, 403)
 
+    def test_role_revocation_and_disabled_accounts_invalidate_admin_access(self):
+        response = self.login()
+        self.assertEqual(response.status_code, 200)
+        self.manager.groups.clear()
+        self.assertFalse(self.client.get('/api/admin/auth/me/').data['authenticated'])
+        self.assertEqual(self.client.get('/api/admin/events/').status_code, 403)
+        response = self.login(self.reviewer)
+        self.assertEqual(response.status_code, 200)
+        get_user_model().objects.filter(pk=self.reviewer.pk).update(is_active=False)
+        self.assertFalse(self.client.get('/api/admin/auth/me/').data['authenticated'])
+
     def test_login_and_logout_reject_get(self):
         self.assertEqual(self.client.get('/api/admin/auth/login/').status_code, 405)
         self.assertEqual(self.client.get('/api/admin/auth/logout/').status_code, 405)
@@ -288,7 +299,9 @@ class RoleAuthorizationTests(TestCase):
     def test_fallback_status_review_is_scoped_and_audited(self):
         self.client.force_login(self.reviewer)
         response = self.client.post(f'/admin/registrations/formsubmission/{self.submissions[0].pk}/change/',
-                                   {'status': 'shortlisted', '_save': 'Save'})
+                                   {'status': 'shortlisted', '_save': 'Save',
+                                    'reviewer_notes-TOTAL_FORMS': '0', 'reviewer_notes-INITIAL_FORMS': '0',
+                                    'status_changes-TOTAL_FORMS': '0', 'status_changes-INITIAL_FORMS': '0'})
         self.assertEqual(response.status_code, 302, response.content)
         self.submissions[0].refresh_from_db()
         self.assertEqual(self.submissions[0].status, 'shortlisted')
@@ -301,6 +314,23 @@ class RoleAuthorizationTests(TestCase):
         self.reviewer.user_permissions.set(Permission.objects.all())
         self.client.force_login(self.reviewer)
         self.assertEqual(self.client.get('/admin/auth/user/').status_code, 403)
+
+    def test_form_list_includes_drafts_and_is_scoped(self):
+        self.forms[0].status = 'draft'
+        self.forms[0].save()
+        self.use(self.manager)
+        response = self.client.get('/api/admin/forms/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['status'], 'draft')
+        self.assertEqual(response.data['results'][0]['field_count'], 1)
+        self.assertNotIn('fields', response.data['results'][0])
+        self.assertEqual(self.client.get(f'/api/admin/forms/?event={self.events[1].pk}').data['count'], 0)
+        self.assertEqual(self.client.get('/api/admin/forms/?event=invalid').status_code, 400)
+        self.use(self.reviewer)
+        self.assertEqual(self.client.get('/api/admin/forms/').status_code, 403)
+        self.use(self.superuser)
+        self.assertEqual(self.client.get('/api/admin/forms/').data['count'], 2)
 
     def test_role_setup_is_idempotent_and_does_not_assign_users(self):
         call_command('setup_admin_roles', stdout=StringIO())
@@ -347,7 +377,8 @@ class CookieConfigurationTests(SimpleTestCase):
         self.assertEqual(json.loads(result.stdout), ['None', 'None', True, True, True, True])
         for changes in ({'DEBUG': 'True'}, {'CSRF_TRUSTED_ORIGINS': ''},
                         {'CORS_ALLOWED_ORIGINS': 'http://console.example.com'}, {'CORS_ALLOW_CREDENTIALS': 'False'},
-                        {'CORS_ALLOWED_ORIGINS': 'https://*.example.com'}):
+                        {'CORS_ALLOWED_ORIGINS': 'https://*.example.com'},
+                        {'CSRF_TRUSTED_ORIGINS': 'https://console.example.com,https://*.example.com'}):
             with self.subTest(changes=changes):
                 result = self.settings_result(**{**config, **changes})
                 self.assertNotEqual(result.returncode, 0)

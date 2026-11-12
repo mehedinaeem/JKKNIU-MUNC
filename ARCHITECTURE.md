@@ -43,3 +43,9 @@ Only exact `published` event status is visible publicly; completed/cancelled/dra
 The database contains new backend event records only. The explicit, debug-only demo command creates fictional development records without reading the historical archive, overwriting existing records or creating accounts; its draft forms still require fields and explicit publishing. Netlify and Heroku remain independent, with no frontend modifications or deployment performed. See [EVENT_API.md](EVENT_API.md) for API contracts and examples.
 
 See [SUBMISSIONS.md](SUBMISSIONS.md) for current public/private API boundaries, storage, rate limits and cleanup operations.
+
+## Administration roles and sessions
+
+`accounts` now owns unique event assignments, managed Django role groups/native permissions, session/CSRF endpoints, shared-cache login limits and common scope helpers. Super Admins have global access; Event Admins and Reviewers are limited to assigned events. Plain staff status is insufficient. Django Admin uses the same scope and restricts user/group/assignment management to Super Admins. Both review interfaces audit status changes. Protected administrative responses are noncacheable; private files check assignment before storage access.
+
+Session cookies are HttpOnly/host-only with secure production defaults. A first-party Netlify API proxy is recommended; a separately explicit HTTPS cross-site mode configures SameSite=None and credentialed trusted CORS without removing CSRF. Active Netlify configuration and public frontend files were not changed. See [AUTHENTICATION.md](AUTHENTICATION.md) and the deployment proxy example for setup and integration limits.

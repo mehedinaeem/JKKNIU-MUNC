@@ -1,4 +1,7 @@
 import logging
+import hashlib
+import json
+import hmac
 from pathlib import Path
 import uuid
 
@@ -42,7 +45,37 @@ def check_version(form, version_number):
     return version
 
 
-def submit_application(form_id, applicant_email, version_number, answers, files=None, user=None):
+def request_digest(email, version, answers, files):
+    try:
+        digest = hashlib.sha256(json.dumps({'email': email, 'version': version, 'answers': answers},
+            sort_keys=True, separators=(',', ':'), allow_nan=False).encode())
+    except (ValueError, TypeError):
+        raise ValidationError({'answers': 'Invalid answer data.'}) from None
+    total = 0
+    for key, upload in sorted((files or {}).items()):
+        if not hasattr(upload, 'chunks') or upload.size > 10 * 1024 * 1024:
+            raise ValidationError({'files': 'Unsupported file or file size.'})
+        total += upload.size
+        if total > 20 * 1024 * 1024:
+            raise ValidationError({'files': 'Total upload size cannot exceed 20 MiB.'})
+        digest.update(json.dumps([key, upload.name, upload.content_type, upload.size]).encode())
+        upload.seek(0)
+        for chunk in upload.chunks():
+            digest.update(chunk)
+        upload.seek(0)
+    return digest.hexdigest()
+
+
+def existing_submission(form_id, key, digest):
+    if key is None:
+        return None
+    prior = FormSubmission.objects.filter(registration_form_id=form_id, submission_key=key).first()
+    if prior and not hmac.compare_digest(prior.submission_digest, digest):
+        raise ValidationError({'submission_key': 'This attempt does not match the earlier application. Retry the original answers and files, or contact the organisers.'})
+    return prior
+
+
+def submit_application(form_id, applicant_email, version_number, answers, files=None, user=None, submission_key=None):
     """Own the transaction boundary so upload cleanup also catches commit failures."""
     applicant_email = applicant_email.strip().casefold()
     from django.core.validators import validate_email
@@ -51,9 +84,20 @@ def submit_application(form_id, applicant_email, version_number, answers, files=
         validate_email(applicant_email)
     except ModelValidationError:
         raise ValidationError({'applicant_email': 'Enter a valid email address.'}) from None
+    fingerprint = request_digest(applicant_email, version_number, answers, files) if submission_key else ''
+    prior = existing_submission(form_id, submission_key, fingerprint)
+    if prior:
+        return prior
     preliminary = RegistrationForm.objects.select_related('event').get(pk=form_id)
-    version = check_version(preliminary, version_number)
-    clean, uploads = validate_answers(version.schema, answers, files)
+    try:
+        version = check_version(preliminary, version_number)
+        clean, uploads = validate_answers(version.schema, answers, files)
+    except ValidationError:
+        # Recover a concurrent commit that completed after the first receipt check.
+        prior = existing_submission(form_id, submission_key, fingerprint)
+        if prior:
+            return prior
+        raise
     if sum(upload.size for upload in uploads.values()) > 20 * 1024 * 1024:
         raise ValidationError({'files': 'Total upload size cannot exceed 20 MiB.'})
     provider = None
@@ -71,6 +115,12 @@ def submit_application(form_id, applicant_email, version_number, answers, files=
             form = RegistrationForm.objects.select_for_update().get(pk=form_id)
             from events.models import Event
             form.event = Event.objects.select_for_update().get(pk=form.event_id)
+            prior = existing_submission(form_id, submission_key, fingerprint)
+            if prior:
+                # A concurrent identical request committed while we were validating.
+                for intent in intents.values():
+                    UploadCleanup.objects.filter(pk=intent.pk).delete()
+                return prior
             version = check_version(form, version_number)
             # Validate against the locked current snapshot, not a mutable draft.
             clean, validated_uploads = validate_answers(version.schema, answers, files)
@@ -88,6 +138,7 @@ def submit_application(form_id, applicant_email, version_number, answers, files=
                 raise ValidationError({'form': 'This form is not accepting more submissions.'})
             submission = FormSubmission.objects.create(event=form.event, registration_form=form,
                 form_version=version, applicant_email=applicant_email, answers=clean,
+                submission_key=submission_key, submission_digest=fingerprint,
                 submitted_by=user if user is not None and user.is_authenticated else None)
             for key, upload in validated_uploads.items():
                 intent = intents[key]

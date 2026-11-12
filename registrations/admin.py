@@ -1,5 +1,4 @@
 from accounts.admin_scopes import EventScopedAdminMixin
-from accounts.roles import is_super_admin
 from .services import change_status
 from django.contrib import admin
 from django.urls import reverse
@@ -34,6 +33,61 @@ class SubmissionAdmin(EventScopedAdminMixin, admin.ModelAdmin):
             from django.core.exceptions import PermissionDenied
             raise PermissionDenied()
         change_status(obj.pk, obj.status, request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class ReviewNoteInline(admin.TabularInline):
+    from .models import ReviewerNote
+    model = ReviewerNote
+    fields = ['author', 'body', 'created_at']
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_view_permission(self, request, obj=None):
+        from accounts.roles import can_review_event, is_administrator
+        return can_review_event(request.user, obj.event_id) if obj else is_administrator(request.user)
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class ReviewHistoryInline(ReviewNoteInline):
+    from .models import SubmissionStatusChange
+    model = SubmissionStatusChange
+    fields = ['changed_by', 'previous_status', 'status', 'created_at']
+    readonly_fields = fields
+
+
+SubmissionAdmin.inlines = [ReviewNoteInline, ReviewHistoryInline]
+
+
+from .models import ReviewAccessLog
+
+
+@admin.register(ReviewAccessLog)
+class ReviewAccessLogAdmin(admin.ModelAdmin):
+    list_display = ['actor', 'action', 'submission', 'created_at']
+    list_filter = ['action']
+    readonly_fields = ['actor', 'action', 'submission', 'metadata', 'created_at']
+
+    def has_module_permission(self, request):
+        from accounts.roles import is_super_admin
+        return is_super_admin(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
     def has_delete_permission(self, request, obj=None):
         return False

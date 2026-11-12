@@ -65,11 +65,11 @@ def publish_form(form_id):
 
 
 @transaction.atomic
-def duplicate_form(form_id, title, slug):
+def duplicate_form(form_id, title, slug, event=None):
     source = RegistrationForm.objects.select_for_update().get(pk=form_id)
-    clone = RegistrationForm.objects.create(event=source.event, title=title, slug=slug,
-        description=source.description, form_type=source.form_type, opens_at=source.opens_at,
-        closes_at=source.closes_at, capacity=source.capacity,
+    clone = RegistrationForm.objects.create(event=event or source.event, title=title, slug=slug,
+        description=source.description, form_type=source.form_type, opens_at=source.opens_at if event is None or event.pk == source.event_id else None,
+        closes_at=source.closes_at if event is None or event.pk == source.event_id else None, capacity=source.capacity,
         allow_multiple_submissions=source.allow_multiple_submissions)
     for field in source.fields.all():
         FormField.objects.create(form=clone, **{name: getattr(field, name) for name in FIELD_ATTRIBUTES})

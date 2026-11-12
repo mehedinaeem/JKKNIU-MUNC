@@ -111,6 +111,7 @@ STORAGES['private_uploads'] = {
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173" if DEBUG else "")
 CORS_URLS_REGEX = r"^/api/.*$"
+CORS_EXPOSE_HEADERS = ["Content-Disposition"]
 CORS_ALLOW_CREDENTIALS = False
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "http://localhost:5173" if DEBUG else "")
 # Heroku's router sets X-Forwarded-Proto. Trust only a controlled proxy.
@@ -200,7 +201,8 @@ CORS_ALLOW_CREDENTIALS = env_bool('CORS_ALLOW_CREDENTIALS', DEBUG or AUTH_COOKIE
 if AUTH_COOKIE_MODE == 'cross_site':
     if DEBUG or not CORS_ALLOW_CREDENTIALS or not CORS_ALLOWED_ORIGINS:
         raise ImproperlyConfigured('Cross-site sessions require production HTTPS and explicit credentialed CORS origins.')
-    if any(not origin.startswith('https://') or '*' in origin or origin not in CSRF_TRUSTED_ORIGINS for origin in CORS_ALLOWED_ORIGINS):
+    if (any(not origin.startswith('https://') or '*' in origin or origin not in CSRF_TRUSTED_ORIGINS for origin in CORS_ALLOWED_ORIGINS)
+            or any(not origin.startswith('https://') or '*' in origin for origin in CSRF_TRUSTED_ORIGINS)):
         raise ImproperlyConfigured('Cross-site CORS origins must be exact HTTPS CSRF-trusted origins.')
 LOGIN_RATE_PER_MINUTE = int(os.getenv('LOGIN_RATE_PER_MINUTE', '10'))
 LOGIN_RATE_PER_HOUR = int(os.getenv('LOGIN_RATE_PER_HOUR', '100'))

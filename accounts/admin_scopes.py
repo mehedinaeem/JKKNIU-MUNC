@@ -1,5 +1,5 @@
 from django.core.exceptions import PermissionDenied
-from .roles import is_administrator, is_super_admin, is_event_manager, scope_queryset, can_manage_event, can_review_event
+from .roles import is_administrator, is_super_admin, is_event_manager, scope_queryset
 
 
 class EventScopedAdminMixin:

@@ -1,15 +1,36 @@
 from rest_framework import serializers
 from events.serializers import ModelCleanMixin
 from .models import RegistrationForm
+from events.models import Event
 
 
 class RegistrationFormSerializer(ModelCleanMixin, serializers.ModelSerializer):
+    event_slug = serializers.SlugField(source='event.slug', read_only=True)
     class Meta:
         model = RegistrationForm
-        fields = ["id", "event", "title", "slug", "description", "form_type", "status",
+        fields = ["id", "event", "event_slug", "title", "slug", "description", "form_type", "status",
                   "opens_at", "closes_at", "capacity", "allow_multiple_submissions",
                   "created_at", "updated_at"]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class FormSummarySerializer(RegistrationFormSerializer):
+    event_title = serializers.CharField(source='event.title', read_only=True)
+    field_count = serializers.IntegerField(read_only=True)
+    submission_count = serializers.IntegerField(read_only=True)
+    accepting_submissions = serializers.SerializerMethodField()
+    unavailable_reason = serializers.SerializerMethodField()
+
+    def get_accepting_submissions(self, obj):
+        from .services import availability_error
+        return availability_error(obj) is None
+
+    def get_unavailable_reason(self, obj):
+        from .services import availability_error
+        return availability_error(obj)
+
+    class Meta(RegistrationFormSerializer.Meta):
+        fields = RegistrationFormSerializer.Meta.fields + ['field_count', 'submission_count', 'accepting_submissions', 'unavailable_reason', 'event_title']
 
 
 class FormFieldSerializer(serializers.ModelSerializer):
@@ -88,6 +109,16 @@ class DraftFormSerializer(RegistrationFormSerializer):
 
 
 class DuplicateFormSerializer(serializers.Serializer):
+    event = serializers.PrimaryKeyRelatedField(queryset=Event.objects.all(), required=False)
+
+    def validate(self, attrs):
+        event = attrs.get('event')
+        if event:
+            from accounts.roles import can_manage_event
+            from rest_framework.exceptions import PermissionDenied
+            if not can_manage_event(self.context['request'].user, event.pk, 'club_forms.add_registrationform'):
+                raise PermissionDenied('You cannot create forms for this event.')
+        return attrs
     title = serializers.CharField(max_length=255)
     slug = serializers.SlugField(max_length=255)
 

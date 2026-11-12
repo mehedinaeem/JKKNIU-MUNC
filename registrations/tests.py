@@ -258,6 +258,44 @@ class PublicSubmissionTests(SubmissionSetup, TestCase):
         self.assertEqual(client.patch(f'/api/admin/submissions/{submission.pk}/status/',
             {'status': 'approved'}, format='json').status_code, 403)
 
+    def test_idempotent_retry_returns_original_receipt_even_after_close(self):
+        import uuid
+        key = str(uuid.uuid4())
+        self.form.capacity = 1
+        self.form.allow_multiple_submissions = True
+        self.form.save()
+        first = self.post(submission_key=key)
+        self.assertEqual(first.status_code, 201)
+        self.form.status = 'closed'
+        self.form.save()
+        self.event.status = 'cancelled'
+        self.event.save()
+        retry = self.post(submission_key=key)
+        self.assertEqual(retry.status_code, 201, retry.data)
+        self.assertEqual(retry.data, first.data)
+        self.assertEqual(FormSubmission.objects.count(), 1)
+        self.form.refresh_from_db()
+        self.assertEqual(self.form.submission_count, 1)
+        changed = self.post(submission_key=key, answers={'name': 'Changed applicant'})
+        self.assertEqual(changed.status_code, 400)
+        self.assertIn('submission_key', changed.data)
+        self.assertNotIn(first.data['reference_number'], str(changed.data))
+
+    def test_file_retry_does_not_upload_or_count_twice(self):
+        import uuid
+        self.add_file_field()
+        key = str(uuid.uuid4())
+        provider = Mock()
+        provider.name = 'cloudinary'
+        with patch('registrations.services.get_provider', return_value=provider):
+            first = self.multipart(SimpleUploadedFile('cv.pdf', pdf_bytes(), content_type='application/pdf'), submission_key=key)
+            retry = self.multipart(SimpleUploadedFile('cv.pdf', pdf_bytes(), content_type='application/pdf'), submission_key=key)
+        self.assertEqual(first.status_code, 201, first.data)
+        self.assertEqual(retry.data, first.data)
+        provider.upload.assert_called_once()
+        self.assertEqual(SubmissionFile.objects.count(), 1)
+        self.assertEqual(UploadCleanup.objects.count(), 0)
+
     def test_json_body_size_limit(self):
         response = self.post(answers={'name': 'a' * (2 * 1024 * 1024)})
         self.assertEqual(response.status_code, 413)

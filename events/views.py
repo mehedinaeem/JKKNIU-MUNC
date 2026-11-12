@@ -1,22 +1,31 @@
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import Event
 from accounts.permissions import EventManagementPermission
 from accounts.roles import scope_queryset
-from .serializers import EventQuerySerializer, EventSerializer
+from .serializers import EventQuerySerializer, EventSerializer, PublicEventSerializer
+
+
+def published_events():
+    from forms.models import RegistrationForm, FormVersion
+    # Availability needs only the existence of a version, never its potentially large schema.
+    forms = RegistrationForm.objects.filter(status='published').prefetch_related(
+        Prefetch('versions', queryset=FormVersion.objects.only('id', 'form_id', 'number')))
+    return Event.objects.filter(status=Event.Status.PUBLISHED).prefetch_related(
+        Prefetch('registration_forms', queryset=forms))
 
 
 class PublicEventList(generics.ListAPIView):
-    serializer_class = EventSerializer
+    serializer_class = PublicEventSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
         query = EventQuerySerializer(data=self.request.query_params)
         query.is_valid(raise_exception=True)
         params = query.validated_data
-        events = Event.objects.filter(status=Event.Status.PUBLISHED)
+        events = published_events()
         if "event_type" in params:
             events = events.filter(event_type=params["event_type"])
         if "start_date_after" in params:
@@ -31,8 +40,8 @@ class PublicEventList(generics.ListAPIView):
 
 
 class PublicEventDetail(generics.RetrieveAPIView):
-    queryset = Event.objects.filter(status=Event.Status.PUBLISHED)
-    serializer_class = EventSerializer
+    queryset = published_events()
+    serializer_class = PublicEventSerializer
     permission_classes = [AllowAny]
     lookup_field = "slug"
 

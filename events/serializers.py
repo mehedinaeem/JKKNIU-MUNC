@@ -44,3 +44,20 @@ class EventQuerySerializer(serializers.Serializer):
     ordering = serializers.ChoiceField(required=False, choices=[
         "start_date", "-start_date", "created_at", "-created_at", "title", "-title",
     ])
+
+
+class PublicEventSerializer(EventSerializer):
+    registration_open = serializers.SerializerMethodField()
+
+    class Meta(EventSerializer.Meta):
+        fields = EventSerializer.Meta.fields + ['registration_open']
+        read_only_fields = fields
+
+    def get_registration_open(self, obj):
+        from forms.services import availability_error
+        # Public querysets prefetch these relations; deadlines/capacity remain authoritative.
+        for form in obj.registration_forms.all():
+            form.event = obj
+            if availability_error(form) is None:
+                return True
+        return False

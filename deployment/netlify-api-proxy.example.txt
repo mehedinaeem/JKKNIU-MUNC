@@ -1,0 +1,6 @@
+# EXAMPLE ONLY. Replace YOUR-BACKEND with the actual HTTPS Heroku backend hostname.
+# Insert the API line BEFORE the existing catch-all in Frontend/public/_redirects.
+# That file is processed before netlify.toml rules; do not leave a preceding SPA fallback.
+# Preserve the existing public SPA fallback as shown below.
+/api/*    https://YOUR-BACKEND.herokuapp.com/api/:splat    200!
+/*        /index.html                                     200
