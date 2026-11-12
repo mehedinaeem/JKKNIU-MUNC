@@ -1,5 +1,6 @@
 """Environment-driven settings for the independent Django API."""
 import os
+import json
 from pathlib import Path
 
 import dj_database_url
@@ -90,6 +91,19 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+# Configure a durable private storage backend before accepting production file answers.
+# Options are trusted deployment configuration, never supplied by form authors.
+try:
+    private_storage_options = json.loads(os.getenv('PRIVATE_UPLOAD_STORAGE_OPTIONS', '{}'))
+except ValueError as exc:
+    raise ImproperlyConfigured('PRIVATE_UPLOAD_STORAGE_OPTIONS must be a JSON object') from exc
+if not isinstance(private_storage_options, dict):
+    raise ImproperlyConfigured('PRIVATE_UPLOAD_STORAGE_OPTIONS must be a JSON object')
+STORAGES['private_uploads'] = {
+    'BACKEND': os.getenv('PRIVATE_UPLOAD_STORAGE_BACKEND', 'registrations.models.PrivateUploadStorage'),
+    'OPTIONS': private_storage_options,
 }
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173" if DEBUG else "")

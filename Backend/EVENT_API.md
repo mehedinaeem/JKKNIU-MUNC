@@ -119,23 +119,4 @@ Example validation error:
 
 ## Registration forms
 
-Manage forms separately in Django Admin or inline under an event. The serializer is available for a future API; this phase does not expose form endpoints or private form data through public event responses.
-
-Fields: event foreign key, title, globally unique slug, description, free-text form_type, status (`draft`, `published`, `closed`, `archived`), optional opens_at/closes_at, nullable capacity (null means unlimited, otherwise >=1), allow_multiple_submissions (default false), and read-only creation/update timestamps. Model validation and database constraints enforce ordered windows and capacity. There is no submission/capacity enforcement workflow yet; these fields store configuration only.
-
-Example `RegistrationFormSerializer` input for internal code (not an HTTP route):
-
-```json
-{
-  "event": 2,
-  "title": "Research Fellowship Application",
-  "slug": "development-conference-research-fellowship",
-  "description": "An administrator-defined custom application.",
-  "form_type": "research-fellowship",
-  "status": "draft",
-  "opens_at": "2027-01-01T00:00:00+06:00",
-  "closes_at": "2027-02-20T23:59:00+06:00",
-  "capacity": 30,
-  "allow_multiple_submissions": false
-}
-```
+The dynamic form engine now provides draft editing, publication/versioning, public schema reads and authenticated submissions. See [FORM_ENGINE.md](FORM_ENGINE.md) for current endpoints, field definitions, lifecycle rules and complete examples. RegistrationForm remains associated with an event through the `registration_forms` reverse relation, with custom form_type strings and the original opening/closing/capacity settings. Forms with published versions are protected against cascade deletion; archive/close them instead.

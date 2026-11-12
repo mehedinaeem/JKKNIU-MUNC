@@ -1,12 +1,5 @@
 from django.contrib import admin
-from forms.models import RegistrationForm
 from .models import Event
-
-
-class RegistrationFormInline(admin.StackedInline):
-    model = RegistrationForm
-    extra = 0
-    prepopulated_fields = {"slug": ("title",)}
 
 
 @admin.register(Event)
@@ -17,4 +10,3 @@ class EventAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
     readonly_fields = ["created_at", "updated_at"]
     autocomplete_fields = ["organizer"]
-    inlines = [RegistrationFormInline]
