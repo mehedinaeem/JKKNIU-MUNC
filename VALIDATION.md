@@ -25,3 +25,15 @@ Not executed: live PostgreSQL migrations/integration, Heroku build/release/runti
 - Executed `seed_demo_events` locally: one fictional published event and four draft example forms. Idempotency and production rejection are also tested.
 - No frontend files modified, no historical archive imports, and no deployment performed.
 - Live PostgreSQL and Heroku integration remain unexecuted; no infrastructure was provided.
+
+## Part 3: dynamic form engine
+
+- Applied `club_forms/0002` plus `registrations/0001` and `0002` locally.
+- Django system checks: no issues. Migration drift check: no changes detected. No pending migrations after application.
+- Full suite: **43 tests passed**, including all earlier tests and 20 dynamic-form tests.
+- Tested all supported answer types, required and optional values, choice validation, unknown answers, defaults, file constraints, private-file permissions, duplicate field keys, incomplete nested PATCH input, staff/CSRF protection, unpublished/closed forms, deadlines, capacity and repeated submissions.
+- Confirmed draft changes do not alter prior published schemas or stored answers; old-version submissions remain linked to their original snapshot. Model/queryset version mutations are rejected.
+- Confirmed duplicate forms are independent drafts without copied versions/submissions.
+- Confirmed local private upload/download and production rejection of filesystem uploads. Tests use temporary storage, not committed uploads.
+- Frontend files were not modified during this work, and nothing was deployed.
+- Not executed: live PostgreSQL concurrency testing, external durable private-storage integration, or Heroku integration. These require unavailable infrastructure. Local database tests use SQLite; production submission concurrency relies on PostgreSQL row locking and conditional counter updates.

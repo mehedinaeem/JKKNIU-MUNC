@@ -12,3 +12,5 @@ media/
 htmlcov/
 .pytest_cache/
 *.log
+
+private_uploads/

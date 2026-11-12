@@ -1,0 +1,130 @@
+import json
+from pathlib import Path
+from django.db import IntegrityError
+from django.http import FileResponse
+from django.urls import reverse
+from django.shortcuts import get_object_or_404
+from rest_framework import generics
+from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.parsers import JSONParser, MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from events.models import Event
+from events.permissions import IsAuthenticatedStaff
+from .models import RegistrationForm
+from .serializers import DraftFormSerializer, DuplicateFormSerializer, SubmissionInputSerializer
+from .services import availability_error, draft_schema, duplicate_form, publish_form, submit_form
+
+
+def public_form(slug):
+    return get_object_or_404(RegistrationForm.objects.select_related('event').filter(
+        status='published', event__status='published', versions__isnull=False).distinct(), slug=slug)
+
+
+def published_data(form):
+    version = form.versions.first()
+    error = availability_error(form)
+    return {'id': form.pk, 'slug': form.slug, 'event_slug': form.event.slug,
+            'version': version.number, 'schema': version.schema,
+            'accepting_submissions': error is None, 'unavailable_reason': error}
+
+
+class EventFormList(generics.ListAPIView):
+    permission_classes = [AllowAny]
+
+    def list(self, request, event_slug):
+        event = get_object_or_404(Event, slug=event_slug, status='published')
+        forms = event.registration_forms.filter(status='published', versions__isnull=False).distinct().select_related('event')
+        page = self.paginate_queryset(forms)
+        return self.get_paginated_response([published_data(form) for form in page])
+
+
+class PublicFormDetail(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, form_slug):
+        return Response(published_data(public_form(form_slug)))
+
+
+class StaffFormCreate(generics.CreateAPIView):
+    permission_classes = [IsAuthenticatedStaff]
+    serializer_class = DraftFormSerializer
+
+
+class StaffFormDetail(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticatedStaff]
+    serializer_class = DraftFormSerializer
+    queryset = RegistrationForm.objects.prefetch_related('fields')
+    http_method_names = ['get', 'patch', 'head', 'options']
+
+
+class StaffFormPreview(APIView):
+    permission_classes = [IsAuthenticatedStaff]
+
+    def get(self, request, pk):
+        return Response({'draft': True, 'schema': draft_schema(get_object_or_404(RegistrationForm, pk=pk))})
+
+
+class StaffFormPublish(APIView):
+    permission_classes = [IsAuthenticatedStaff]
+
+    def post(self, request, pk):
+        get_object_or_404(RegistrationForm, pk=pk)
+        version = publish_form(pk)
+        return Response({'id': version.form_id, 'version': version.number, 'schema': version.schema}, status=201)
+
+
+class StaffFormDuplicate(APIView):
+    permission_classes = [IsAuthenticatedStaff]
+
+    def post(self, request, pk):
+        get_object_or_404(RegistrationForm, pk=pk)
+        serializer = DuplicateFormSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            form = duplicate_form(pk, **serializer.validated_data)
+        except IntegrityError as exc:
+            raise ValidationError({'slug': 'This slug is already in use.'}) from exc
+        return Response(DraftFormSerializer(form).data, status=201)
+
+
+class FormSubmit(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser]
+
+    def post(self, request, form_slug):
+        form = public_form(form_slug)
+        if request.content_type.startswith('multipart/'):
+            try:
+                payload = json.loads(request.POST.get('payload', ''))
+            except (ValueError, TypeError):
+                raise ValidationError({'payload': 'Expected JSON containing version and answers.'})
+            if any(len(request.FILES.getlist(key)) != 1 for key in request.FILES):
+                raise ValidationError({'files': 'Only one upload per file field is supported.'})
+        else:
+            payload = request.data
+        serializer = SubmissionInputSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        submission = submit_form(form.pk, request.user, serializer.validated_data['version'],
+                                 serializer.validated_data['answers'], request.FILES)
+        return Response({'id': str(submission.pk), 'version': submission.version.number,
+                         'created_at': submission.created_at,
+                         'files': [{'field_key': item.field_key,
+                                    'download_url': reverse('forms:file-download', kwargs={'pk': item.pk})}
+                                   for item in submission.files.all()]}, status=201)
+
+
+class SubmissionFileDownload(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        from registrations.models import SubmissionFile
+        item = get_object_or_404(SubmissionFile.objects.select_related('submission'), pk=pk)
+        if item.submission.submitted_by_id != request.user.pk and not request.user.is_staff:
+            raise PermissionDenied()
+        response = FileResponse(item.file.open('rb'), as_attachment=True, filename='answer' + Path(item.file.name).suffix,
+                                content_type='application/octet-stream')
+        response['Cache-Control'] = 'private, no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
