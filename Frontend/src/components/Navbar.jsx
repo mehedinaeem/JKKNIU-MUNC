@@ -87,7 +87,7 @@ const Navbar = () => {
                         ))}
                         {/* Join Button */}
                         <Link
-                            to="/contact"
+                            to="/join"
                             className={`px-5 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:-translate-y-0.5 ${hasLightBackground
                                 ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-soft hover:shadow-glow'
                                 : 'bg-accent-400 text-primary-900 hover:bg-accent-300 shadow-soft'
@@ -160,7 +160,7 @@ const Navbar = () => {
                             </NavLink>
                         ))}
                         <Link
-                            to="/contact"
+                            to="/join"
                             className="block w-full mt-4 px-4 py-3 bg-primary-600 text-white text-center font-semibold rounded-xl hover:bg-primary-700 transition-colors duration-300"
                         >
                             Join Us

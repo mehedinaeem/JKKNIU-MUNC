@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
     testDir: './e2e',
-    testMatch: process.env.MUNC_E2E_REAL_API ? ['**/email-live.spec.js', '**/integration-live.spec.js', '**/archive-live.spec.js', '**/live.spec.js', '**/registration-live.spec.js', '**/review-live.spec.js'] : '**/admin.spec.js',
+    testMatch: process.env.MUNC_E2E_REAL_API ? ['**/membership-live.spec.js', '**/email-live.spec.js', '**/integration-live.spec.js', '**/archive-live.spec.js', '**/live.spec.js', '**/registration-live.spec.js', '**/review-live.spec.js'] : '**/admin.spec.js',
     timeout: 45000,
     workers: 1,
     use: { baseURL: 'http://127.0.0.1:4173', headless: true,

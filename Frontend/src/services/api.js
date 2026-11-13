@@ -80,6 +80,22 @@ export const api = {
         csrfToken = data.csrf_token; // Django rotates CSRF state on login.
         return data;
     },
+    async memberLogin(identifier, password) {
+        const data = await request('/membership/login/', { method: 'POST', data: { identifier, password } });
+        csrfToken = data.csrf_token;
+        return data;
+    },
+    async memberLogout() {
+        await request('/membership/logout/', { method: 'POST', data: {} });
+        csrfToken = undefined;
+    },
+    async uploadMemberPhoto(file) {
+        const data = new FormData(); data.append('photo', file);
+        const response = await fetch(apiUrl('/membership/photo/'), { method: 'POST', credentials: 'include', cache: 'no-store', redirect: 'error', headers: { 'X-CSRFToken': await getCSRF() }, body: data });
+        const body = await response.json();
+        if (!response.ok) throw new ApiError(response.status, body);
+        return body;
+    },
     async logout() {
         await request('/admin/auth/logout/', { method: 'POST', data: {} });
         csrfToken = undefined;

@@ -46,7 +46,7 @@ const HeroVideo = () => {
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 opacity-0 animate-fade-in-up animation-delay-400">
                     <Link
-                        to="/contact"
+                        to="/join"
                         className="group px-8 py-4 bg-accent-400 text-primary-900 font-semibold rounded-full shadow-lg hover:bg-accent-300 hover:shadow-glow-gold transform hover:-translate-y-1 transition-all duration-300"
                     >
                         <span className="flex items-center justify-center gap-2">

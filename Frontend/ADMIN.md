@@ -110,3 +110,7 @@ Per-form spreadsheet views, private image behavior and API contracts: [FORM_SHEE
 Super Admins and assigned Event Admins can use `/admin/email` (also `/admin/email-campaigns`) for overview, campaigns, templates, scheduled notices, delivery history, failed/uncertain outcomes and per-event settings. Existing application detail pages show delivery/payment summaries and manager-only payment verification. Payments remain separate from application decisions and uploaded evidence. No credentials enter React or browser storage. Previewing or queueing does not imply delivery; a configured backend worker and authenticated delivery webhook are required.
 
 See [EMAIL_SYSTEM.md](../Backend/EMAIL_SYSTEM.md) for APIs/tests and [DEPLOYMENT.md](../Backend/DEPLOYMENT.md) for exact Brevo/Heroku setup. No provider account, paid service or deployment was provisioned.
+
+## Membership administration
+
+Super Admins and explicitly designated membership administrators can open `/admin/members`. Applications, private invitations, configurable club roles and audit history have separate tabs. Event Admin and Reviewer roles do not grant membership authority automatically. An officer must independently confirm student identity before creating an inactive account or issuing a private activation invitation. University verification is intentionally unavailable until authorized provider configuration is supplied; use only explicit synthetic local fixtures for development. See Backend/MEMBERSHIP.md for onboarding, APIs, local configuration and complete security workflow.

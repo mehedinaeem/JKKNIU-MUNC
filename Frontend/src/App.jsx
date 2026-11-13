@@ -9,6 +9,7 @@ import EventDetailsPage from './pages/EventDetailsPage';
 import GalleryPage from './pages/GalleryPage';
 import ContactPage from './pages/ContactPage';
 
+const MemberPortal = lazy(() => import('./pages/member/MemberPortal'));
 const AdminApp = lazy(() => import('./pages/admin/AdminApp'));
 const EventRegistrationPage = lazy(() => import('./pages/registration/EventRegistrationPage'));
 const EventRegistrationFormPage = lazy(() => import('./pages/registration/EventRegistrationFormPage'));
@@ -41,6 +42,16 @@ function App() {
           <Route path="events/:slug/register" element={<RegistrationRoute><EventRegistrationPage /></RegistrationRoute>} />
           <Route path="events/:slug/register/:formSlug" element={<RegistrationRoute><EventRegistrationFormPage /></RegistrationRoute>} />
           <Route path="events/:slug/register/:formSlug/confirmation" element={<RegistrationRoute><RegistrationConfirmationPage /></RegistrationRoute>} />
+
+          <Route path="join" element={<RegistrationRoute><MemberPortal key="join" mode="join" /></RegistrationRoute>} />
+          <Route path="join/apply" element={<RegistrationRoute><MemberPortal key="apply" mode="apply" /></RegistrationRoute>} />
+          <Route path="join/activate" element={<RegistrationRoute><MemberPortal key="activate" mode="activate" /></RegistrationRoute>} />
+          <Route path="member/login" element={<RegistrationRoute><MemberPortal key="login" mode="login" /></RegistrationRoute>} />
+          <Route path="member/forgot-password" element={<RegistrationRoute><MemberPortal key="forgot" mode="forgot" /></RegistrationRoute>} />
+          <Route path="member/reset-password" element={<RegistrationRoute><MemberPortal key="reset" mode="reset" /></RegistrationRoute>} />
+          <Route path="member/dashboard" element={<RegistrationRoute><MemberPortal key="dashboard" mode="dashboard" /></RegistrationRoute>} />
+          <Route path="member/profile" element={<RegistrationRoute><MemberPortal key="profile" mode="profile" /></RegistrationRoute>} />
+          <Route path="member/settings" element={<RegistrationRoute><MemberPortal key="settings" mode="settings" /></RegistrationRoute>} />
 
           {/* Gallery Page */}
           <Route path="gallery" element={<GalleryPage />} />

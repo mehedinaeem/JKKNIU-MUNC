@@ -12,6 +12,7 @@ import ApplicationsPage from './ApplicationsPage';
 import ApplicationDetailPage from './ApplicationDetailPage';
 import FormSheetsPage from './FormSheetsPage';
 import EmailApp from './email/EmailApp';
+import MembersApp from './MembersApp';
 import FormBuilderPage from './FormBuilderPage';
 import '../../components/admin/admin.css';
 
@@ -27,11 +28,16 @@ function ManagementRoutes() {
     const { canManage } = useAdminAuth();
     return canManage ? <Outlet /> : <><PageHeader title="Access denied" description="Your reviewer role allows assigned application review. Managing forms and email requires Event Admin or Super Admin access." /><p className="text-sm text-slate-500">Ask a Super Admin if your role or assignment needs to change.</p></>;
 }
+function AdminHome() {
+    const { administrator } = useAdminAuth();
+    return administrator?.roles?.length && administrator.roles.every(role => role === 'Membership Admin') ? <Navigate to="/admin/members" replace /> : <DashboardPage />;
+}
 export default function AdminApp() {
     return <AdminProvider><Routes>
         <Route path="login" element={<LoginPage />} />
         <Route element={<ProtectedRoutes />}><Route element={<AdminLayout />}>
-            <Route index element={<DashboardPage />} />
+            <Route index element={<AdminHome />} />
+            <Route path="members/*" element={<MembersApp />} />
             <Route path="events" element={<EventsManagementPage />} />
             <Route path="events/new" element={<EventEditorPage />} />
             <Route path="events/:id" element={<EventEditorPage />} />
