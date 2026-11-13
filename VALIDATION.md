@@ -120,3 +120,13 @@ Not executed: live PostgreSQL migrations/integration, Heroku build/release/runti
 - Django checks and migration drift check passed; no new schema migration or dependency required. **109 backend tests** and **39 frontend tests** passed, plus frontend lint/build and **4 browser regression tests**. The **5 real Django workflows** include sheet row/column display, actual image loading/enlargement, separate form switching and responsive scrolling at 375/768/1440px.
 - Visually inspected desktop and mobile sheet screenshots. No public applicant endpoint or storage-provider URL was introduced. No deployment was performed. Cloudinary remains mocked in backend storage tests; browser previews use real temporary private files.
 - Usage/API/security documentation: FORM_SHEETS.md.
+
+
+## Brevo email management
+
+- Added durable database email queue, post-commit registration/status/payment notifications, editable safe templates, recipient snapshots, scheduled campaigns, quota/reserve/rate gates, bounded retries and explicit uncertain-outcome reconciliation. Existing registration data and historical public content remain intact.
+- Added event-scoped email APIs and responsive React administration at `/admin/email` (`/admin/email-campaigns` alias), independent payment verification, consent/opt-out, authenticated delivery webhooks, suppression, retention and audited operator actions.
+- Django system checks, migration drift check and migrations passed. **135 backend tests run: 134 passed, 1 skipped**. The supplied PostgreSQL parallel-claim test requires a dedicated PostgreSQL test database; this environment uses SQLite.
+- Frontend lint/build and **42 frontend tests** passed. **4 browser regressions** and **6 real Django browser workflows** passed, including the email campaign lifecycle and existing registration/upload/review/export/archive flows. Checked responsive email layout at 375/768/1440px.
+- Queue dry run was read-only and reported transport disabled. Provider unit tests use mocks; real browser tests use an isolated temporary database, temporary private files and disabled email transport. No real email, deployment, production credential, paid service or DNS change was performed.
+- Live Brevo delivery/webhook configuration, sender DNS verification, PostgreSQL concurrency verification and an operator-funded execution schedule remain manual. See EMAIL_SYSTEM.md for file/API/migration manifests and DEPLOYMENT.md for exact local/Heroku commands, environment variables and setup.
