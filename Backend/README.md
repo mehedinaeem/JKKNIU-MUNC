@@ -101,3 +101,5 @@ python manage.py collectstatic --noinput
 The tests cover public health access without a database query, method restrictions, allowed/disallowed CORS, HTTPS proxy handling, app registration, aware timestamps, an auth database round trip, and isolated environment configuration. PostgreSQL configuration is tested without connecting. Live PostgreSQL and Heroku integration require infrastructure and are not validated locally.
 
 Application review dashboard, private notes, audit history and secure CSV/XLSX exports: [REVIEW_API.md](REVIEW_API.md).
+
+Email management, post-commit notifications and durable queue: [EMAIL_SYSTEM.md](EMAIL_SYSTEM.md). Brevo/Heroku manual setup and operations: [DEPLOYMENT.md](DEPLOYMENT.md). Transport is disabled by default; no real email is sent without operator configuration.

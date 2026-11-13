@@ -51,4 +51,28 @@ test('assigned reviewer can search, review, download and export without accessin
     await page.getByRole('link', { name: 'Overview', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Total events 1', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Applications under review 1', exact: true })).toBeVisible();
+    await page.getByRole('link', { name: 'Form sheets', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Choose registration sheet' }).selectOption({ label: 'Review fixture — Isolated test conference' });
+    await expect(page.getByRole('columnheader', { name: 'Full name', exact: true })).toBeVisible();
+    await expect(page.getByText('Review fixture applicant', { exact: true })).toBeVisible();
+    const sheet = page.getByRole('region', { name: 'Form response spreadsheet' });
+    await sheet.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    const thumbnail = page.getByRole('img', { name: 'Uploaded image preview', exact: true });
+    await expect(thumbnail).toBeVisible();
+    await expect.poll(() => thumbnail.evaluate(element => element.naturalWidth)).toBeGreaterThan(0);
+    expect(await thumbnail.getAttribute('src')).toMatch(/^blob:/);
+    await page.getByRole('button', { name: 'Enlarge image', exact: true }).click();
+    await expect(page.getByRole('dialog').getByRole('img', { name: 'Private uploaded image' })).toBeVisible();
+    await page.getByRole('button', { name: 'Close preview', exact: true }).click();
+    for (const width of [1440, 768, 375]) {
+        await page.setViewportSize({ width, height: 1000 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
+        await sheet.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+        await expect(thumbnail).toBeVisible();
+        await page.screenshot({ path: testInfo.outputPath(`sheet-${width}.png`), fullPage: true });
+    }
+    await page.getByRole('combobox', { name: 'Choose registration sheet' }).selectOption({ label: 'Executive Board Application — Isolated test conference' });
+    await expect(page.getByText('No responses found', { exact: true })).toBeVisible();
+    await expect(page.getByText('Review fixture applicant', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('columnheader', { name: 'CV upload', exact: true })).toBeAttached();
 });

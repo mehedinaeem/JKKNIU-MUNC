@@ -13,7 +13,7 @@ export default function AdminLayout() {
         setBusy(true);
         try { await auth.logout(); } catch (failure) { setError(failure); } finally { setBusy(false); }
     }
-    const links = [['/admin', 'Overview', '◈'], ['/admin/events', 'Events', '▦'], ['/admin/submissions', 'Applications', '▧'], ...(auth.canManage ? [['/admin/forms', 'Registration forms', '▤']] : [])];
+    const links = [['/admin', 'Overview', '◈'], ['/admin/events', 'Events', '▦'], ['/admin/submissions', 'Applications', '▧'], ['/admin/sheets', 'Form sheets', '▤'], ...(auth.canManage ? [['/admin/forms', 'Registration forms', '▤'], ['/admin/email', 'Email management', '✉']] : [])];
     return <div className="admin-app admin-shell lg:flex">
         <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-white focus:p-3" href="#admin-main">Skip to main content</a>
         <aside className="bg-primary-900 text-white lg:fixed lg:inset-y-0 lg:w-64 lg:flex lg:flex-col">

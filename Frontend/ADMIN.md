@@ -40,6 +40,8 @@ Production reads `VITE_API_BASE_URL` at build time and defaults to `/api`. Use t
 | `/admin/forms/:id` | Visual builder, preview and lifecycle actions |
 | `/admin/submissions` | Filtered, paginated applications and CSV/XLSX exports |
 | `/admin/submissions/:id` | Submitted answers, private documents, decisions, notes and review history |
+| `/admin/sheets` | Choose a separate response sheet per form |
+| `/admin/sheets/:formId` | All dynamic answer columns and protected image previews |
 
 Super Admin and Event Admin roles can manage forms within their backend-authorized scope. Reviewers can see their assigned event context but cannot enter form-management routes. Application review is available at `/admin/submissions`, with Django Admin retained as a fallback. See [review API and security documentation](../Backend/REVIEW_API.md). The backend remains authoritative: route protection never replaces Django role/assignment checks.
 
@@ -100,3 +102,11 @@ Live Netlify/Heroku proxy-cookie forwarding and cross-site browser policies requ
 The dashboard now shows database aggregates for assigned events, published forms, all submissions, new/under-review applications and approved/rejected applicants. Applications supports event/form/status filters, name/email/reference search and server pagination. Exports use the same active filters across all matching pages. The private detail screen uses immutable submitted question labels/options, authorized document downloads and an append-only reviewer note/status timeline.
 
 Form cards show submission counts and whether applications are currently accepted. Archive preserves all historical responses and schemas. Duplicate now permits selecting another authorized event; cross-event copies clear old deadlines and always begin as unpublished drafts. The real Django integration suite also checks review roles, file/export delivery, private notes, lifecycle actions and responsive widths.
+
+Per-form spreadsheet views, private image behavior and API contracts: [FORM_SHEETS.md](../Backend/FORM_SHEETS.md).
+
+## Email management
+
+Super Admins and assigned Event Admins can use `/admin/email` (also `/admin/email-campaigns`) for overview, campaigns, templates, scheduled notices, delivery history, failed/uncertain outcomes and per-event settings. Existing application detail pages show delivery/payment summaries and manager-only payment verification. Payments remain separate from application decisions and uploaded evidence. No credentials enter React or browser storage. Previewing or queueing does not imply delivery; a configured backend worker and authenticated delivery webhook are required.
+
+See [EMAIL_SYSTEM.md](../Backend/EMAIL_SYSTEM.md) for APIs/tests and [DEPLOYMENT.md](../Backend/DEPLOYMENT.md) for exact Brevo/Heroku setup. No provider account, paid service or deployment was provisioned.

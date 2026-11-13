@@ -103,3 +103,18 @@ export async function downloadPrivate(path, filename) {
     anchor.href = url; anchor.download = filename; document.body.append(anchor); anchor.click(); anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+
+export async function privateImage(path, { signal } = {}) {
+    if (!/^\/submission-files\/\d+\/preview\/(\?size=large)?$/.test(path)) throw new Error('Use a private image preview path.');
+    let response;
+    try { response = await fetch(apiUrl(path), { signal, credentials: 'include', cache: 'no-store', redirect: 'error', headers: { Accept: 'image/png, image/jpeg, application/json' } }); }
+    catch (error) { if (error.name === 'AbortError') throw error; throw new ApiError(0, {}, 'Image preview could not connect.'); }
+    if (!response.ok) {
+        let detail = {};
+        try { detail = await response.json(); } catch { /* Gateway response. */ }
+        throw new ApiError(response.status, detail, 'Image preview is unavailable.');
+    }
+    if (!['image/png', 'image/jpeg'].includes(response.headers.get('content-type'))) throw new ApiError(0, {}, 'Unexpected image response.');
+    return response.blob();
+}

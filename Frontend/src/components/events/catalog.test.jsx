@@ -1,13 +1,14 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { events } from '../../data/events';
 import { api } from '../../services/api';
 import { backendEvent, dhakaDate, mergeEventCatalog } from '../../services/eventCatalog';
 import EventsPage from '../../pages/EventsPage';
-vi.mock('../../services/api', () => ({ api: { publicList: vi.fn() } }));
+import EventDetailsPage from '../../pages/EventDetailsPage';
+vi.mock('../../services/api', () => ({ api: { publicList: vi.fn(), publicGet: vi.fn() } }));
 const remote = { id: 9, slug: 'national-mun-2027', title: 'National MUN 2027', status: 'published', event_type: 'Conference', start_date: '2027-01-01T20:00:00Z', end_date: null, description: 'Current event', registration_open: true, cover_image: 'https://example.invalid/cover.png' };
-beforeEach(() => { api.publicList.mockReset(); });
+beforeEach(() => { api.publicList.mockReset(); api.publicGet.mockReset(); vi.stubGlobal('scrollTo', vi.fn()); vi.stubGlobal('matchMedia', () => ({ matches: true })); });
 
 it('combines published events with immutable historical records and Dhaka dates', () => {
     const before = JSON.stringify(events);
@@ -49,4 +50,22 @@ it('shows registration links only for API events with an open published form', a
     render(<MemoryRouter><EventsPage /></MemoryRouter>);
     expect(await screen.findByRole('link', { name: 'Register for National MUN 2027' })).toHaveAttribute('href', '/events/national-mun-2027/register');
     expect(screen.queryByRole('link', { name: 'Register for Closed conference' })).not.toBeInTheDocument();
+});
+
+it('canonicalizes a precise duplicate API alias to its original historical URL', async () => {
+    const historical = events.find(event => /^\d{4}-\d{2}-\d{2}$/.test(event.date));
+    api.publicGet.mockResolvedValue({ ...remote, slug: 'historical-alias', title: historical.title, start_date: `${historical.date}T06:00:00Z`, registration_open: false });
+    api.publicList.mockResolvedValue([]);
+    render(<MemoryRouter initialEntries={['/events/historical-alias']}><Routes><Route path="/events/:slug" element={<EventDetailsPage />} /></Routes></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: historical.title, exact: true })).toBeVisible();
+    expect(screen.getAllByRole('button', { name: /^Open gallery image/ })).toHaveLength(historical.gallery.length);
+    expect(api.publicGet).toHaveBeenCalledTimes(1);
+});
+
+it('distinguishes temporary API detail failure from a missing historical record', async () => {
+    api.publicGet.mockRejectedValue({ status: 503 });
+    render(<MemoryRouter initialEntries={['/events/api-conference']}><Routes><Route path="/events/:slug" element={<EventDetailsPage />} /></Routes></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: 'Event details unavailable' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Back to all events' })).toHaveAttribute('href', '/events');
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
 });

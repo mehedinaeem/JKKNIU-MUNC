@@ -14,7 +14,9 @@ export function backendEvent(event) {
         endDate: event.end_date ? dhakaDate(event.end_date) : '', category: event.event_type || 'Event',
         shortDescription: event.short_description || '', fullDescription: event.description || '',
         coverImage: safeCover(event.cover_image), cardDesktop: safeCover(event.cover_image), cardMobile: '',
-        registrationSlug: event.registration_open ? event.slug : null, managed: true };
+        registrationSlug: event.registration_open ? event.slug : null, managed: true,
+        startsAt: event.start_date, endsAt: event.end_date || event.start_date,
+        registrationStartsAt: event.registration_start, registrationEndsAt: event.registration_end };
 }
 export function safeCover(value) {
     if (typeof value !== 'string') return '';
@@ -45,4 +47,21 @@ export function mergeEventCatalog(historical, remote) {
         if (identity) identities.set(identity, event);
     }
     return result.sort(newestFirst);
+}
+
+
+export function splitEventCatalog(catalog, now) {
+    const upcoming = [], past = [];
+    for (const event of catalog) {
+        // Archive entries keep their original interpretation and editorial dates.
+        const current = event.managed && new Date(event.endsAt).getTime() > now;
+        const canRegister = current && new Date(event.startsAt).getTime() > now
+            && (!event.registrationStartsAt || new Date(event.registrationStartsAt).getTime() <= now)
+            && (!event.registrationEndsAt || new Date(event.registrationEndsAt).getTime() > now);
+        const displayed = { ...event, registrationSlug: canRegister ? event.registrationSlug : null };
+        (current ? upcoming : past).push(displayed);
+    }
+    upcoming.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
+    past.sort(newestFirst);
+    return { upcoming, past };
 }

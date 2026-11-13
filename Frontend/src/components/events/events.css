@@ -9,10 +9,10 @@
 .event-reset:disabled { color: #64748b; opacity: .65; }
 .events-page :is(button, a, input, select):focus-visible, .event-dialog :is(button, a):focus-visible { outline: 3px solid #d97706; outline-offset: 4px; }
 .event-grid { min-height: 28rem; align-items: stretch; }
-.event-reveal { min-width: 0; }
+.event-reveal { min-width: 0; display: flex; flex-direction: column; }
 .event-awaiting { opacity: 0; transform: translateY(24px); }
 .event-revealed { animation: fadeInUp 500ms ease-out both; animation-delay: var(--reveal-delay, 0ms); }
-.event-card { width: 100%; height: 100%; display: flex; flex-direction: column; text-align: left; overflow: hidden; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; box-shadow: 0 4px 18px #0f172a05; transition: transform 300ms, box-shadow 300ms, border-color 300ms; }
+.event-card { width: 100%; flex: 1; display: flex; flex-direction: column; text-align: left; overflow: hidden; border-radius: 1rem; border: 1px solid #e2e8f0; background: white; box-shadow: 0 4px 18px #0f172a05; transition: transform 300ms, box-shadow 300ms, border-color 300ms; }
 .event-card:hover { transform: translateY(-5px); border-color: #d6b667; box-shadow: 0 14px 35px #0f172a14; }
 .event-card-image { width: 100%; aspect-ratio: 16 / 9; overflow: hidden; position: relative; background: #e2e8f0; }
 .event-card-image picture, .event-card-image img { display: block; width: 100%; height: 100%; }
@@ -85,3 +85,5 @@
     .event-story-layout { grid-template-columns: minmax(0, 1fr); gap: 2rem; padding-top: 2rem; }
     .event-story-navigation { gap: 1rem; margin-top: 2.5rem; }
 }
+
+.upcoming-events :is(button, a):focus-visible { outline: 3px solid #d97706; outline-offset: 4px; }

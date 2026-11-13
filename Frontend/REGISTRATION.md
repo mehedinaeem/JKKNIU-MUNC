@@ -35,3 +35,15 @@ Local private file storage is temporary; production must configure persistent pr
 ## Checks
 
 `npm run test` covers dynamic controls, validation, server errors, progress, repeat clicks, safe retries, closed forms and storage privacy. `npm run lint` and `npm run build` check all frontend code. `python3 scripts/run-admin-integration.py` runs both administration and public registration browser workflows against an isolated temporary Django database, including real uploads and retry after a lost committed response. No live infrastructure or credentials are used.
+
+## Event discovery integration
+
+`/events` now combines published backend events with the preserved historical archive. Existing historical details remain on their original renderer and URLs. Current backend events have their own details at the existing event route and show registration entry points when an available published form exists. Overlapping slugs or exact normalized title/date identities are deduplicated with archive content taking priority. API downtime leaves the archive usable. Full workflow evidence, matching rules, test commands and external limitations are documented in [INTEGRATION_VERIFICATION.md](../Backend/INTEGRATION_VERIFICATION.md).
+
+## Upcoming events on the homepage
+
+The homepage displays the nearest three upcoming/ongoing published backend events immediately after its hero as a compact list of linked event names and registration buttons, without image cards. The Events page displays all upcoming events first, followed by a separate Past events section. Existing search/year/category filters apply to both sections. Registration links appear while the backend advertises an available published form and the event registration window is still open; closing registration alone does not turn a future event into a past event.
+
+Events leave Upcoming at their exact `end_date`, or `start_date` when no end date is set, and remain available in Past events at the same URL. These are timezone-aware timestamps; displayed dates use Asia/Dhaka. A page-local timer updates at relevant date boundaries and on focus/visibility changes, so an open page also updates without a reload. Historical archive entries remain in Past events and their content/images are unchanged. No scheduled database mutation or deployment is needed.
+
+To show a new upcoming event, set a future start/end date and publish the event in Admin. Publish an open registration form for that event to display its Register button. Unpublished events and forms are never displayed as open registration. The homepage has loading/empty/retry states when there are no announcements or the API is unavailable.

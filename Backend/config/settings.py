@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework", "corsheaders", "accounts.apps.AccountsConfig",
     "events.apps.EventsConfig", "forms.apps.FormsConfig",
     "registrations.apps.RegistrationsConfig",
+    "mailing.apps.MailingConfig",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -209,3 +210,40 @@ LOGIN_RATE_PER_HOUR = int(os.getenv('LOGIN_RATE_PER_HOUR', '100'))
 LOGIN_USERNAME_RATE_PER_15_MINUTES = int(os.getenv('LOGIN_USERNAME_RATE_PER_15_MINUTES', '10'))
 if min(LOGIN_RATE_PER_MINUTE, LOGIN_RATE_PER_HOUR, LOGIN_USERNAME_RATE_PER_15_MINUTES, SESSION_COOKIE_AGE) < 1:
     raise ImproperlyConfigured('Login limits and session age must be positive integers.')
+
+# Durable email queue. Enabling transport requires explicit operator configuration.
+EMAIL_ENABLED = env_bool('EMAIL_ENABLED', False)
+EMAIL_PROVIDER = os.getenv('EMAIL_PROVIDER', 'brevo')
+BREVO_API_KEY = os.getenv('BREVO_API_KEY', '')
+BREVO_WEBHOOK_TOKEN = os.getenv('BREVO_WEBHOOK_TOKEN', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '')
+DEFAULT_FROM_NAME = os.getenv('DEFAULT_FROM_NAME', 'JKKNIU Model United Nations Club')
+PUBLIC_SITE_URL = os.getenv('PUBLIC_SITE_URL', 'http://localhost:5173' if DEBUG else '').rstrip('/')
+PUBLIC_API_URL = os.getenv('PUBLIC_API_URL', 'http://localhost:8000/api' if DEBUG else (f'{PUBLIC_SITE_URL}/api' if PUBLIC_SITE_URL else '')).rstrip('/')
+EMAIL_DAILY_LIMIT = int(os.getenv('EMAIL_DAILY_LIMIT', '300'))
+EMAIL_TRANSACTIONAL_RESERVE = int(os.getenv('EMAIL_TRANSACTIONAL_RESERVE', '50'))
+EMAIL_RATE_PER_MINUTE = int(os.getenv('EMAIL_RATE_PER_MINUTE', '60'))
+EMAIL_CONNECT_TIMEOUT = float(os.getenv('EMAIL_CONNECT_TIMEOUT', '5'))
+EMAIL_READ_TIMEOUT = float(os.getenv('EMAIL_READ_TIMEOUT', '20'))
+EMAIL_MAX_ATTEMPTS = int(os.getenv('EMAIL_MAX_ATTEMPTS', '5'))
+EMAIL_RETRY_BASE_SECONDS = int(os.getenv('EMAIL_RETRY_BASE_SECONDS', '60'))
+EMAIL_LEASE_SECONDS = int(os.getenv('EMAIL_LEASE_SECONDS', '180'))
+EMAIL_RETENTION_DAYS = int(os.getenv('EMAIL_RETENTION_DAYS', '180'))
+EMAIL_QUOTA_TIME_ZONE = os.getenv('EMAIL_QUOTA_TIME_ZONE', 'UTC')
+EMAIL_CAMPAIGN_MAX_RECIPIENTS = int(os.getenv('EMAIL_CAMPAIGN_MAX_RECIPIENTS', '10000'))
+if EMAIL_PROVIDER != 'brevo' or not 0 <= EMAIL_TRANSACTIONAL_RESERVE <= EMAIL_DAILY_LIMIT or min(EMAIL_DAILY_LIMIT, EMAIL_RATE_PER_MINUTE, EMAIL_MAX_ATTEMPTS, EMAIL_RETRY_BASE_SECONDS, EMAIL_RETENTION_DAYS, EMAIL_CAMPAIGN_MAX_RECIPIENTS, EMAIL_CONNECT_TIMEOUT, EMAIL_READ_TIMEOUT) <= 0:
+    raise ImproperlyConfigured('Invalid email queue/provider settings.')
+if EMAIL_LEASE_SECONDS <= EMAIL_CONNECT_TIMEOUT + EMAIL_READ_TIMEOUT + 30:
+    raise ImproperlyConfigured('EMAIL_LEASE_SECONDS must exceed provider timeouts plus 30 seconds.')
+
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from urllib.parse import urlsplit
+try:
+    ZoneInfo(EMAIL_QUOTA_TIME_ZONE)
+except ZoneInfoNotFoundError:
+    raise ImproperlyConfigured('Use an IANA timezone for EMAIL_QUOTA_TIME_ZONE.') from None
+for mail_url in (PUBLIC_SITE_URL, PUBLIC_API_URL):
+    if mail_url:
+        parsed_mail_url = urlsplit(mail_url)
+        if parsed_mail_url.scheme not in ({'http', 'https'} if DEBUG else {'https'}) or not parsed_mail_url.netloc or parsed_mail_url.username or parsed_mail_url.password or parsed_mail_url.query or parsed_mail_url.fragment:
+            raise ImproperlyConfigured('Public email URLs must be absolute trusted HTTPS URLs in production, without credentials/query/fragment.')

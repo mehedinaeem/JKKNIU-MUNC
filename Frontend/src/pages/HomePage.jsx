@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import UpcomingEventsSection from '../components/events/UpcomingEventsSection';
+import useEventCatalog from '../hooks/useEventCatalog';
 import HeroVideo from '../components/HeroVideo';
 import { organizationInfo } from '../data/organization';
 
@@ -7,6 +9,7 @@ import { organizationInfo } from '../data/organization';
  * Landing page with hero section and introduction to MUN club
  */
 const HomePage = () => {
+    const catalog = useEventCatalog();
     // Features/Benefits of joining MUN
     const features = [
         {
@@ -77,6 +80,7 @@ const HomePage = () => {
         <div>
             {/* Hero Section with Video Background */}
             <HeroVideo />
+            <UpcomingEventsSection home events={catalog.upcoming} loading={catalog.loading} error={catalog.error} onRetry={catalog.reload} />
 
             {/* About Preview Section */}
             <section className="section-container bg-gray-50">

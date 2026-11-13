@@ -10,6 +10,8 @@ import EventEditorPage from './EventEditorPage';
 import FormsManagementPage from './FormsManagementPage';
 import ApplicationsPage from './ApplicationsPage';
 import ApplicationDetailPage from './ApplicationDetailPage';
+import FormSheetsPage from './FormSheetsPage';
+import EmailApp from './email/EmailApp';
 import FormBuilderPage from './FormBuilderPage';
 import '../../components/admin/admin.css';
 
@@ -23,7 +25,7 @@ function ProtectedRoutes() {
 }
 function ManagementRoutes() {
     const { canManage } = useAdminAuth();
-    return canManage ? <Outlet /> : <><PageHeader title="Access denied" description="Your reviewer role allows you to view assigned events. Form management requires Event Admin or Super Admin access." /><p className="text-sm text-slate-500">Ask a Super Admin if your role or assignment needs to change.</p></>;
+    return canManage ? <Outlet /> : <><PageHeader title="Access denied" description="Your reviewer role allows assigned application review. Managing forms and email requires Event Admin or Super Admin access." /><p className="text-sm text-slate-500">Ask a Super Admin if your role or assignment needs to change.</p></>;
 }
 export default function AdminApp() {
     return <AdminProvider><Routes>
@@ -33,9 +35,13 @@ export default function AdminApp() {
             <Route path="events" element={<EventsManagementPage />} />
             <Route path="events/new" element={<EventEditorPage />} />
             <Route path="events/:id" element={<EventEditorPage />} />
+            <Route path="sheets" element={<FormSheetsPage />} />
+            <Route path="sheets/:formId" element={<FormSheetsPage />} />
             <Route path="submissions" element={<ApplicationsPage />} />
             <Route path="submissions/:id" element={<ApplicationDetailPage />} />
             <Route element={<ManagementRoutes />}>
+                <Route path="email/*" element={<EmailApp />} />
+                <Route path="email-campaigns" element={<Navigate to="/admin/email/campaigns" replace />} />
                 <Route path="forms" element={<FormsManagementPage />} />
                 <Route path="forms/:id" element={<FormBuilderPage />} />
             </Route>

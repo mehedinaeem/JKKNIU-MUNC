@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import EventImage from './EventImage';
 import { displayDate } from './eventUtils';
 
-export default function EventCard({ event, index }) {
+export default function EventCard({ event, index, titleAs = 'h2' }) {
+    const Heading = titleAs;
     const ref = useRef(null);
     useEffect(() => {
         const element = ref.current;
@@ -29,7 +30,7 @@ export default function EventCard({ event, index }) {
                 <div className="event-card-body">
                     <span className="event-category">{event.category}</span>
                     <p className="text-sm text-gray-500 mt-3">{displayDate(event)}</p>
-                    <h2 className="text-lg font-semibold text-primary-900 mt-2 group-hover:text-primary-600 transition-colors">{event.title}</h2>
+                    <Heading className="text-lg font-semibold text-primary-900 mt-2 group-hover:text-primary-600 transition-colors">{event.title}</Heading>
                     {event.shortDescription && <p className="text-sm leading-relaxed text-gray-600 mt-3 line-clamp-3">{event.shortDescription}</p>}
                     <span className="event-card-action">View details <span aria-hidden="true">↗</span></span>
                 </div>

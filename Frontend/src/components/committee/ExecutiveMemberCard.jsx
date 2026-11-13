@@ -1,5 +1,6 @@
 // Display-only framing for the supplied portraits; source images remain unchanged.
 const portraitFrames = {
+    'exec-02': { size: '250%', top: '2%' },
     'exec-06': { size: '370%', top: '-12%' },
     'exec-08': { size: '220%', top: '-22%' },
     'exec-09': { size: '350%', top: '-10%' },
