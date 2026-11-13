@@ -1,3 +1,4 @@
+from accounts.models import RateLimitCounter
 from datetime import timedelta
 from unittest.mock import patch
 from urllib.parse import urlsplit, parse_qs
@@ -24,9 +25,10 @@ FIXTURE = {'20230001': {'full_name': 'Test Student', 'department': 'English', 's
 class MembershipTests(TestCase):
     def setUp(self):
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         self.client = APIClient()
         self.admin = get_user_model().objects.create_superuser('membership-admin', 'admin@example.invalid', PASSWORD)
-        self.role = MembershipRole.objects.first()
+        self.role, _ = MembershipRole.objects.get_or_create(name='General Member')
         self.identity = StudentVerificationService().verify('20230001')
     def application_payload(self, client=None):
         client = client or self.client
@@ -329,7 +331,7 @@ class PostgreSQLActivationConcurrencyTests(TransactionTestCase):
         if connection.vendor != 'postgresql': self.skipTest('Requires a dedicated PostgreSQL test database for row locks.')
         from concurrent.futures import ThreadPoolExecutor
         identity = StudentIdentity.objects.create(registration_number='CONCURRENT1', full_name='Concurrent Student', department='Test', verification_source='authorized-test')
-        role = MembershipRole.objects.first()
+        role, _ = MembershipRole.objects.get_or_create(name='General Member')
         admin = get_user_model().objects.create_superuser('concurrent-admin', 'admin@example.invalid', PASSWORD)
         member = create_member(identity, role, admin, 'Independently confirmed in person')
         _, url = issue_invitation(member, admin, 'Independently confirmed in person', 'in_person')

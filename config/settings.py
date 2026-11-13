@@ -269,3 +269,8 @@ if DEBUG and MEMBERSHIP_ALLOW_MOCK and MEMBERSHIP_MOCK_FIXTURE_FILE:
             raise ValueError()
     except (OSError, ValueError):
         raise ImproperlyConfigured('Membership development fixture must be a valid local JSON object with at most 1000 entries.') from None
+
+# Shared login, membership and public-registration quotas; Redis is optional.
+RATE_LIMIT_BACKEND = os.getenv('RATE_LIMIT_BACKEND', 'auto').strip().lower()
+if RATE_LIMIT_BACKEND not in {'auto', 'database', 'redis'}:
+    raise ImproperlyConfigured('RATE_LIMIT_BACKEND must be auto, database or redis.')

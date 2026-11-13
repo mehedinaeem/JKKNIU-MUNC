@@ -1,3 +1,4 @@
+from accounts.models import RateLimitCounter
 from datetime import timedelta
 from io import BytesIO, StringIO
 from unittest.mock import Mock, patch
@@ -38,6 +39,7 @@ class AuthenticationTests(TestCase):
 
     def setUp(self):
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         self.client = APIClient(enforce_csrf_checks=True)
 
     def csrf(self):
@@ -133,10 +135,12 @@ class AuthenticationTests(TestCase):
             self.assertEqual(response.status_code, 429)
             self.assertIn('Retry-After', response)
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         with override_settings(LOGIN_USERNAME_RATE_PER_15_MINUTES=1):
             self.assertEqual(self.login(password='wrong', REMOTE_ADDR='127.0.0.2').status_code, 401)
             self.assertEqual(self.login(password='wrong', REMOTE_ADDR='127.0.0.3').status_code, 429)
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         with override_settings(LOGIN_RATE_PER_MINUTE=1):
             self.login(password='wrong')
             response = self.client.post('/admin/login/', {'username': self.manager.username, 'password': 'wrong'},
@@ -145,7 +149,7 @@ class AuthenticationTests(TestCase):
 
     def test_rate_limit_cache_failure_is_generic(self):
         token = self.csrf()
-        with patch('accounts.throttles.cache.incr', side_effect=RuntimeError('private cache connection')):
+        with override_settings(RATE_LIMIT_BACKEND='redis', REDIS_URL='redis://test-only'), patch('accounts.rate_limits.cache.incr', side_effect=RuntimeError('private cache connection')):
             response = self.login(token=token)
         self.assertEqual(response.status_code, 503)
         self.assertNotIn('private cache', str(response.data))
@@ -266,7 +270,7 @@ class RoleAuthorizationTests(TestCase):
             with patch('registrations.views.get_provider', return_value=provider):
                 response = self.client.get(f'/api/submission-files/{self.files[0].pk}/')
                 self.assertEqual(response.status_code, 200)
-                response.close()
+                b''.join(response.streaming_content)  # Let Django's test client close the streaming response safely.
 
     def test_assignment_revocation_takes_effect(self):
         self.use(self.manager)

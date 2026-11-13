@@ -9,6 +9,9 @@ def submission_configuration(app_configs, **kwargs):
     errors = []
     if settings.SUBMISSION_STORAGE_PROVIDER != 'cloudinary' or not all(settings.CLOUDINARY_CONFIG.values()):
         errors.append(Error('Configure persistent authenticated Cloudinary storage before production submissions.', id='registrations.E001'))
-    if not settings.REDIS_URL:
-        errors.append(Error('Configure REDIS_URL for shared production submission rate limits.', id='registrations.E002'))
+    from accounts.rate_limits import selected_backend
+    if selected_backend() == 'redis' and not settings.REDIS_URL:
+        errors.append(Error('Redis rate limiting requires REDIS_URL.', id='registrations.E002'))
+    if selected_backend() == 'database' and settings.DATABASES['default']['ENGINE'] != 'django.db.backends.postgresql':
+        errors.append(Error('Production database rate limiting requires PostgreSQL.', id='registrations.E003'))
     return errors

@@ -12,3 +12,11 @@ class EventAssignment(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.event}'
+
+
+class RateLimitCounter(models.Model):
+    """Fixed-window quota shared by all web workers; identities are HMAC digests."""
+    key = models.CharField(max_length=200, primary_key=True)
+    scope = models.CharField(max_length=100)
+    attempts = models.PositiveBigIntegerField(default=1)
+    expires_at = models.DateTimeField(db_index=True)

@@ -1,3 +1,4 @@
+from accounts.models import RateLimitCounter
 from datetime import timedelta
 from io import BytesIO
 from unittest.mock import patch, Mock
@@ -21,6 +22,7 @@ from .exports import safe_cell
 class ReviewTests(TestCase):
     def setUp(self):
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         setup_roles()
         self.client = APIClient()
         self.event = Event.objects.create(title='Assigned conference', slug='assigned', event_type='conference', status='published', start_date=timezone.now() + timedelta(days=30))

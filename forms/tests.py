@@ -1,3 +1,4 @@
+from accounts.models import RateLimitCounter
 import copy
 import tempfile
 from datetime import timedelta
@@ -35,6 +36,7 @@ class DynamicFormTests(TestCase):
     def setUp(self):
         from django.core.cache import cache
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         self.client = APIClient()
         self.staff = get_user_model().objects.create_user(username='form-staff', is_staff=True, is_superuser=True)
         self.user = get_user_model().objects.create_user(username='applicant', email='applicant@example.com')
@@ -257,13 +259,13 @@ class DynamicFormTests(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'application/octet-stream')
             self.assertIn('attachment;', response['Content-Disposition'])
-            response.close()
+            b''.join(response.streaming_content)  # Let Django's test client close the streaming response safely.
             self.client.force_authenticate(self.other)
             self.assertEqual(self.client.get(f'/api/submission-files/{stored.pk}/').status_code, 403)
             self.auth_staff()
             response = self.client.get(f'/api/submission-files/{stored.pk}/')
             self.assertEqual(response.status_code, 200)
-            response.close()
+            b''.join(response.streaming_content)  # Let Django's test client close the streaming response safely.
 
     def test_bad_file_extension_size_and_fake_path(self):
         field = {'key': 'file', 'label': 'File', 'field_type': 'file', 'required': True,

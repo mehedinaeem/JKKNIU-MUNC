@@ -97,7 +97,8 @@ AUTH_COOKIE_MODE=proxy
 DEBUG=False
 ALLOWED_HOSTS=<actual-backend-hostname>,<frontend-hostname-if-forwarded-by-your-proxy>
 CSRF_TRUSTED_ORIGINS=https://<actual-frontend-origin>
-REDIS_URL=<shared-production-Redis-URL>
+RATE_LIMIT_BACKEND=auto
+# REDIS_URL is optional; PostgreSQL is selected when it is absent.
 ```
 
 Use actual hostnames without schemes in ALLOWED_HOSTS and exact HTTPS origins in CSRF_TRUSTED_ORIGINS. CORS is unnecessary for browser same-origin proxy calls; production proxy mode defaults to `CORS_ALLOW_CREDENTIALS=False`. Backend proxy/security configuration must correctly identify the original HTTPS request through the trusted router. Do not set Cookie Domain to the Heroku hostname, `.netlify.app`, or a wildcard domain. Never cache auth/administrative proxy responses or overwrite upstream Set-Cookie headers. Verify browser Set-Cookie/session persistence, CSRF, forwarded Host/Origin/HTTPS, cache headers and logout on the real deployment before enabling access.
@@ -159,7 +160,7 @@ Browsers may still block third-party cookies even with correct attributes; no ba
 
 ## Limits, session lifetime and verification
 
-Login attempts are limited at both API and `/admin/login/`: defaults 10/minute and 100/hour per inferred client IP, plus 10/15 minutes per normalized username. Configure `LOGIN_RATE_PER_MINUTE`, `LOGIN_RATE_PER_HOUR`, `LOGIN_USERNAME_RATE_PER_15_MINUTES`. Limits use fixed-window atomic cache counters with server-keyed HMAC identifiers; usernames and IPs are not stored as plaintext keys. Valid-CSRF failed and successful login attempts consume quota. 429 includes Retry-After. Production requires the existing shared Redis configuration; unavailable/missing caching fails closed with a generic 503.
+Login attempts are limited at both API and `/admin/login/`: defaults 10/minute and 100/hour per inferred client IP, plus 10/15 minutes per normalized username. Configure `LOGIN_RATE_PER_MINUTE`, `LOGIN_RATE_PER_HOUR`, `LOGIN_USERNAME_RATE_PER_15_MINUTES`. Limits use fixed-window atomic shared database or Redis counters with server-keyed HMAC identifiers; usernames and IPs are not stored as plaintext keys. Valid-CSRF failed and successful login attempts consume quota. 429 includes Retry-After. Production uses PostgreSQL when REDIS_URL is absent; configured Redis remains optional. Database/selected-Redis failures fail closed with the existing generic 503. See RATE_LIMITING.md for concurrency, cleanup and migration details.
 
 `TRUSTED_PROXY_COUNT` affects inferred client IP. Keep the existing safe default of one trusted Heroku hop unless the actual proxy chain is verified. Through an extra Netlify proxy, that can aggregate clients under proxy egress IPs; validate quotas against real traffic before rollout. Do not blindly increase the count on a publicly reachable backend, where attacker-supplied forwarding entries could spoof identity. Per-username limits remain independent of proxy IP grouping. Production perimeter/proxy configuration is a deployment integration task, not an assumption of this implementation.
 

@@ -1,10 +1,7 @@
-import math
-import time
 from django.conf import settings
-from django.core.cache import cache
-from django.utils.crypto import salted_hmac
-from rest_framework.exceptions import APIException, Throttled
+from rest_framework.exceptions import APIException
 from rest_framework.throttling import BaseThrottle
+from accounts.rate_limits import consume, RateLimitUnavailable
 
 
 class SubmissionUnavailable(APIException):
@@ -13,19 +10,10 @@ class SubmissionUnavailable(APIException):
 
 
 def consume_quota(identity, scope, limit, period):
-    if not settings.DEBUG and not settings.REDIS_URL:
-        raise SubmissionUnavailable()
-    now = time.time()
-    bucket = int(now // period)
-    digest = salted_hmac('submission-quota', identity, algorithm='sha256').hexdigest()
-    key = f'submission:{scope}:{bucket}:{digest}'
     try:
-        cache.add(key, 0, timeout=period + 5)
-        count = cache.incr(key)
-    except Exception:
+        consume(identity, f'submission:{scope}', limit, period)
+    except RateLimitUnavailable:
         raise SubmissionUnavailable() from None
-    if count > limit:
-        raise Throttled(wait=max(1, math.ceil(period - now % period)))
 
 
 class SubmissionIPThrottle(BaseThrottle):

@@ -1,3 +1,4 @@
+from accounts.models import RateLimitCounter
 from datetime import timedelta
 from io import BytesIO, StringIO
 from pathlib import Path
@@ -45,6 +46,7 @@ def image_bytes():
 class SubmissionSetup:
     def setUp(self):
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.storage_settings = override_settings(LOCAL_PRIVATE_UPLOAD_ROOT=self.directory.name)
@@ -160,7 +162,7 @@ class PublicSubmissionTests(SubmissionSetup, TestCase):
         self.assertIn('no-store', response['Cache-Control'])
         self.assertEqual(response['Content-Type'], 'application/octet-stream')
         self.assertNotIn('receipt', response['Content-Disposition'])
-        response.close()
+        b''.join(response.streaming_content)  # Let Django's test client close the streaming response safely.
 
     def test_invalid_extensions_mime_contents_active_pdf_and_sizes(self):
         self.add_file_field()
@@ -199,17 +201,18 @@ class PublicSubmissionTests(SubmissionSetup, TestCase):
             self.assertEqual(response.status_code, 429)
             self.assertIn('Retry-After', response)
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         with override_settings(SUBMISSION_EMAIL_RATE_PER_HOUR=1):
             self.assertEqual(self.post(answers={}).status_code, 400)
             self.assertEqual(self.post(answers={}).status_code, 429)
 
-    def test_quota_cache_failure_and_production_missing_shared_cache_fail_closed(self):
-        with patch('registrations.throttles.cache.incr', side_effect=RuntimeError('secret connection string')):
+    def test_quota_cache_failure_and_production_database_fallback(self):
+        with override_settings(RATE_LIMIT_BACKEND='redis', REDIS_URL='redis://test-only'), patch('accounts.rate_limits.cache.incr', side_effect=RuntimeError('secret connection string')):
             response = self.post()
         self.assertEqual(response.status_code, 503)
         self.assertNotIn('secret', str(response.data))
-        with override_settings(DEBUG=False, REDIS_URL='', SECURE_SSL_REDIRECT=False):
-            self.assertEqual(self.post().status_code, 503)
+        with override_settings(DEBUG=False, REDIS_URL='', RATE_LIMIT_BACKEND='auto', SECURE_SSL_REDIRECT=False):
+            self.assertEqual(self.post(answers={}).status_code, 400)
 
     def test_staff_list_detail_status_and_privacy(self):
         self.post()
@@ -325,7 +328,6 @@ class PublicSubmissionTests(SubmissionSetup, TestCase):
             self.assertNotIn('Location', response)
             self.assertIn('type=authenticated', fetch.call_args.args[0])
             self.assertEqual(b''.join(response.streaming_content), pdf_bytes())
-            response.close()
         remote.close.assert_called()
 
     def test_failed_upload_is_cleaned_and_database_rolls_back(self):

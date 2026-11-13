@@ -252,3 +252,7 @@ No deployment, real email, account provisioning or paid scaling is performed by 
 ## Membership readiness
 
 See [MEMBERSHIP.md](MEMBERSHIP.md) for migration commands, designated-officer onboarding, student-provider authorization, private activation, mock fixtures and security testing. Install the updated requirements on web and email workers. Keep university verification disabled until actual authorized Sonali/university API documentation and credentials are available. No endpoint was guessed and no student records were scraped. Activation/reset links waiting in the email queue are encrypted with a domain-separated key derived from Django SECRET_KEY; manage key rotation deliberately. First-party session routing, Cloudinary authenticated storage and Brevo remain the existing infrastructure; no SMS service is required.
+
+## Production login without Redis
+
+The backend-heroku branch now supports shared PostgreSQL login/registration/membership quotas. RATE_LIMIT_BACKEND defaults to auto: configured Redis is used, otherwise the existing PostgreSQL database. No Redis add-on or new paid service is required. Apply accounts/0002_ratelimitcounter through the existing release migration before serving updated requests. Keep DEBUG=False and CSRF/session settings unchanged. See RATE_LIMITING.md for branch-root verification commands, concurrency evidence and periodic cleanup_rate_limits maintenance. This change does not deploy, push a branch or change Heroku configuration automatically.

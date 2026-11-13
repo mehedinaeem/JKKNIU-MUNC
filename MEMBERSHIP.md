@@ -123,7 +123,7 @@ Links use URL fragments, not query strings, so the capability is not sent in pro
 
 ## APIs
 
-All APIs are under `/api`. Unsafe methods require CSRF, including anonymous login, application and activation. Initialize CSRF through existing GET `/api/admin/auth/csrf/`; session cookies remain HttpOnly. Responses are private/no-store. Public sensitive actions and login/recovery identifiers have throttles, using the project's existing cache/fail-closed production rate-limit configuration. Production must retain its configured shared cache; local memory throttling is single-process development only.
+All APIs are under `/api`. Unsafe methods require CSRF, including anonymous login, application and activation. Initialize CSRF through existing GET `/api/admin/auth/csrf/`; session cookies remain HttpOnly. Responses are private/no-store. Public sensitive actions and login/recovery identifiers have throttles, using the project's existing cache/fail-closed production rate-limit configuration. These quotas use the shared PostgreSQL limiter when Redis is absent; configured Redis remains optional. See RATE_LIMITING.md for backend selection, failure handling and cleanup.
 
 | Endpoint | Methods / access |
 | --- | --- |

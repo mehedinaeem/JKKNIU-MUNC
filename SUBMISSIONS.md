@@ -96,7 +96,8 @@ SUBMISSION_STORAGE_PROVIDER=cloudinary
 CLOUDINARY_CLOUD_NAME=<cloud name>
 CLOUDINARY_API_KEY=<API key>
 CLOUDINARY_API_SECRET=<API secret>
-REDIS_URL=<shared Redis connection URL>
+RATE_LIMIT_BACKEND=auto
+# Optional: REDIS_URL=<shared Redis connection URL>
 ```
 
 Alternatively use `CLOUDINARY_URL=cloudinary://<api_key>:<api_secret>@<cloud_name>`; it takes precedence over individual Cloudinary variables. No real credentials or production secrets are provided. Never add these values to frontend/Vite variables, browser uploads, source control, screenshots or application logs.
@@ -109,7 +110,7 @@ Filesystem storage is rejected for production submissions, including on Heroku. 
 
 Defaults are 5 attempts/minute and 30/hour per client IP, plus 5/hour per normalized applicant email. Configure `SUBMISSION_RATE_PER_MINUTE`, `SUBMISSION_RATE_PER_HOUR`, and `SUBMISSION_EMAIL_RATE_PER_HOUR` as positive integers. Invalid attempts also consume quota. Exceeding quota returns 429 with Retry-After. Fixed-window counters use cache add/increment rather than a read/modify/write list; cache identities use a server-keyed HMAC instead of plaintext IP/email.
 
-Local development uses process-local memory caching. Production requires `REDIS_URL` shared across all workers/dynos; missing or unavailable shared caching returns 503 rather than silently disabling throttling. Use your provider's TLS Redis URL where required. `TRUSTED_PROXY_COUNT` defaults to zero locally and one behind the intended Heroku router. Configure it for the actual trusted proxy chain so client-supplied forwarding headers cannot bypass quotas. Apply platform request-body limits consistent with the application upload policy. No rate-limit/bot protection can establish anonymous applicant identity by itself.
+Login, membership and public submissions use the shared database limiter when REDIS_URL is absent, including in development. Production uses PostgreSQL; Redis remains optional when configured. A failure of the selected store returns a generic 503 rather than disabling throttling or switching budgets. See RATE_LIMITING.md for migration and expired-counter cleanup. Use your provider's TLS Redis URL where required. `TRUSTED_PROXY_COUNT` defaults to zero locally and one behind the intended Heroku router. Configure it for the actual trusted proxy chain so client-supplied forwarding headers cannot bypass quotas. Apply platform request-body limits consistent with the application upload policy. No rate-limit/bot protection can establish anonymous applicant identity by itself.
 
 ## Orphan cleanup and operations
 

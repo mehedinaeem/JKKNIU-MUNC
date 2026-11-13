@@ -1,3 +1,4 @@
+from accounts.models import RateLimitCounter
 import json
 from unittest.mock import patch
 import requests
@@ -64,6 +65,7 @@ class SonaliLookupTests(TestCase):
     def test_public_application_does_not_return_student_record(self):
         from django.core.cache import cache
         cache.clear()
+        RateLimitCounter.objects.all().delete()
         client = APIClient()
         checked = client.post('/api/membership/lookup/', {'registration_number': 'TEST-123', 'consent': True}, format='json')
         self.assertEqual(checked.status_code, 200)
