@@ -1,0 +1,30 @@
+from django.urls import path
+from . import views as v
+
+urlpatterns = [
+    path('membership/lookup/', v.StudentLookup.as_view()),
+    path('membership/apply/', v.Apply.as_view()),
+    path('membership/activate/', v.Activate.as_view()),
+    path('membership/login/', v.MemberLogin.as_view()),
+    path('membership/logout/', v.MemberLogout.as_view()),
+    path('membership/password-reset/request/', v.ResetRequest.as_view()),
+    path('membership/password-reset/confirm/', v.ResetConfirm.as_view()),
+    path('membership/me/', v.Me.as_view()),
+    path('membership/change-password/', v.ChangePassword.as_view()),
+    path('membership/change-email/', v.ChangeEmail.as_view()),
+    path('membership/photo/', v.Photo.as_view()),
+    path('membership/announcements/', v.Announcements.as_view()),
+    path('admin/student-verification/', v.VerifyStudent.as_view()),
+    path('admin/members/', v.MemberList.as_view()),
+    path('admin/members/export/', v.Export.as_view()),
+    path('admin/members/<uuid:pk>/', v.MemberDetail.as_view()),
+    path('admin/members/<uuid:pk>/photo/', v.AdminPhoto.as_view()),
+    path('admin/members/<uuid:pk>/<str:action>/', v.MemberAction.as_view()),
+    path('admin/membership-applications/', v.ApplicationList.as_view()),
+    path('admin/membership-applications/<uuid:pk>/<str:action>/', v.ApplicationReview.as_view()),
+    path('admin/membership-roles/', v.RoleList.as_view()),
+    path('admin/membership-roles/<int:pk>/', v.RoleDetail.as_view()),
+    path('admin/membership-invitations/', v.InvitationList.as_view()),
+    path('admin/membership-invitations/<uuid:pk>/revoke/', v.RevokeInvitation.as_view()),
+    path('admin/membership-audit/', v.AuditList.as_view()),
+]

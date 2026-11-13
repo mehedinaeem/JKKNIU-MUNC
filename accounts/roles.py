@@ -60,6 +60,10 @@ def is_administrator(user):
     return is_super_admin(user) or has_role(user, EVENT_ADMIN, REVIEWER)
 
 
+def can_access_administration(user):
+    return is_administrator(user) or bool(active_staff(user) and user.has_perm('membership.manage_membership'))
+
+
 def is_event_manager(user):
     return is_super_admin(user) or has_role(user, EVENT_ADMIN)
 

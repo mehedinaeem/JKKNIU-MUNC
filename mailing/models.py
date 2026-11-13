@@ -103,7 +103,7 @@ class EmailMessage(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event_key = models.CharField(max_length=255, unique=True)
     recipient_email = models.EmailField()
-    event = models.ForeignKey('events.Event', on_delete=models.PROTECT)
+    event = models.ForeignKey('events.Event', null=True, blank=True, on_delete=models.PROTECT)
     submission = models.ForeignKey('registrations.FormSubmission', null=True, blank=True, on_delete=models.PROTECT, related_name='email_messages')
     status_change = models.ForeignKey('registrations.SubmissionStatusChange', null=True, blank=True, on_delete=models.PROTECT, related_name='email_messages')
     payment_change = models.ForeignKey(PaymentChange, null=True, blank=True, on_delete=models.PROTECT, related_name='email_messages')

@@ -8,7 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from registrations.parsers import BoundedJSONParser
-from .roles import is_administrator
+from .roles import can_access_administration
 from .serializers import LoginSerializer, administrator_data
 from .throttles import limit_login
 
@@ -40,7 +40,7 @@ class LoginView(APIView):
         data = serializer.validated_data
         limit_login(request, data['username'])
         user = authenticate(request=request._request, username=data['username'], password=data['password'])
-        if user is None or not is_administrator(user):
+        if user is None or not can_access_administration(user):
             return Response({'detail': 'Invalid administrator credentials.'}, status=401)
         login(request._request, user)
         return Response({'authenticated': True, 'administrator': administrator_data(user),
@@ -61,6 +61,6 @@ class CurrentAdministratorView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        authenticated = is_administrator(request.user)
+        authenticated = can_access_administration(request.user)
         return Response({'authenticated': authenticated,
                          'administrator': administrator_data(request.user) if authenticated else None})

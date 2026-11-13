@@ -103,3 +103,5 @@ The tests cover public health access without a database query, method restrictio
 Application review dashboard, private notes, audit history and secure CSV/XLSX exports: [REVIEW_API.md](REVIEW_API.md).
 
 Email management, post-commit notifications and durable queue: [EMAIL_SYSTEM.md](EMAIL_SYSTEM.md). Brevo/Heroku manual setup and operations: [DEPLOYMENT.md](DEPLOYMENT.md). Transport is disabled by default; no real email is sent without operator configuration.
+
+Membership portal and designated-officer workflows: [MEMBERSHIP.md](MEMBERSHIP.md). Uses the existing Django user/session system and encrypted private-link jobs in the existing email queue. University verification is disabled until an authorized adapter is configured; explicit synthetic local fixtures are documented.

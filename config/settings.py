@@ -247,3 +247,25 @@ for mail_url in (PUBLIC_SITE_URL, PUBLIC_API_URL):
         parsed_mail_url = urlsplit(mail_url)
         if parsed_mail_url.scheme not in ({'http', 'https'} if DEBUG else {'https'}) or not parsed_mail_url.netloc or parsed_mail_url.username or parsed_mail_url.password or parsed_mail_url.query or parsed_mail_url.fragment:
             raise ImproperlyConfigured('Public email URLs must be absolute trusted HTTPS URLs in production, without credentials/query/fragment.')
+
+# University verification is unavailable until an authorized adapter is configured.
+INSTALLED_APPS += ['membership.apps.MembershipConfig']
+MEMBERSHIP_VERIFICATION_PROVIDER = os.getenv('MEMBERSHIP_VERIFICATION_PROVIDER', 'disabled')
+MEMBERSHIP_ALLOW_MOCK = env_bool('MEMBERSHIP_ALLOW_MOCK', False)
+MEMBERSHIP_MOCK_STUDENTS = {}  # Explicit local/test fixtures, never invented records.
+MEMBERSHIP_INVITATION_HOURS = int(os.getenv('MEMBERSHIP_INVITATION_HOURS', '24'))
+if not 1 <= MEMBERSHIP_INVITATION_HOURS <= 168:
+    raise ImproperlyConfigured('MEMBERSHIP_INVITATION_HOURS must be between 1 and 168.')
+if not DEBUG and (MEMBERSHIP_ALLOW_MOCK or MEMBERSHIP_VERIFICATION_PROVIDER == 'mock'):
+    raise ImproperlyConfigured('Mock student verification cannot be used in production.')
+
+MEMBERSHIP_MOCK_FIXTURE_FILE = os.getenv('MEMBERSHIP_MOCK_FIXTURE_FILE', '')
+if DEBUG and MEMBERSHIP_ALLOW_MOCK and MEMBERSHIP_MOCK_FIXTURE_FILE:
+    import json
+    try:
+        with open(MEMBERSHIP_MOCK_FIXTURE_FILE, encoding='utf-8') as fixture:
+            MEMBERSHIP_MOCK_STUDENTS = json.load(fixture)
+        if not isinstance(MEMBERSHIP_MOCK_STUDENTS, dict) or len(MEMBERSHIP_MOCK_STUDENTS) > 1000:
+            raise ValueError()
+    except (OSError, ValueError):
+        raise ImproperlyConfigured('Membership development fixture must be a valid local JSON object with at most 1000 entries.') from None

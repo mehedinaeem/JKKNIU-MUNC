@@ -20,7 +20,7 @@ def quota_day(now=None):
 @transaction.atomic
 def claim(transactional_only=False):
     now = timezone.now()
-    quota, _ = EmailDailyQuota.objects.get_or_create(day=quota_day(now))
+    quota, _ = EmailDailyQuota.objects.get_or_create(day=quota_day(now), defaults={'next_send_at': now})
     quota = EmailDailyQuota.objects.select_for_update().get(pk=quota.pk)
     if quota.used >= settings.EMAIL_DAILY_LIMIT:
         return None, 'quota'
@@ -28,7 +28,7 @@ def claim(transactional_only=False):
         return None, 'rate'
     candidates = EmailMessage.objects.filter(status__in=PENDING, next_attempt_at__lte=now).filter(
         Q(campaign__isnull=True) | Q(campaign__status='sending')).annotate(
-            priority=Case(When(classification='transactional', then=0), default=1, output_field=IntegerField())).order_by('priority', 'created_at', 'id')
+            priority=Case(When(message_type__in=['membership_invitation', 'membership_password_reset', 'membership_email_verification'], then=0), When(classification='transactional', then=1), default=2, output_field=IntegerField())).order_by('priority', 'created_at', 'id')
     if transactional_only or quota.bulk_used >= settings.EMAIL_DAILY_LIMIT - settings.EMAIL_TRANSACTIONAL_RESERVE:
         candidates = candidates.filter(classification='transactional')
     # Lock only the job row; nullable joins cannot be FOR UPDATE targets on PostgreSQL.
@@ -36,6 +36,14 @@ def claim(transactional_only=False):
     message = locked.first()
     if not message:
         return None, 'empty'
+    if message.event_key.startswith('membership:invitation:'):
+        from membership.models import ActivationInvitation
+        invitation = ActivationInvitation.objects.filter(pk=message.event_key.split(':')[-1]).first()
+        if not invitation or invitation.used_at or invitation.revoked_at or invitation.expires_at <= now:
+            message.status, message.last_error = 'skipped', 'Private invitation is no longer valid.'
+            message.html_content = message.text_content = ''
+            message.save()
+            return None, 'skipped'
     if message.campaign_id:
         campaign = EmailCampaign.objects.select_for_update().get(pk=message.campaign_id)
         if campaign.status != 'sending':

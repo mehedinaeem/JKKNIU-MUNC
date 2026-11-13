@@ -19,9 +19,14 @@ class BrevoProvider:
     def send(self, message, headers=None):
         if not settings.BREVO_API_KEY or not message.sender_email:
             return SendResult('failed', error='Email provider/sender is not configured.')
+        html, text = message.html_content, message.text_content
+        from membership.crypto import SECURITY_TYPES, unseal
+        if message.message_type in SECURITY_TYPES:
+            try: html, text = unseal(html), unseal(text)
+            except Exception: return SendResult('failed', error='Private email could not be decrypted; restore the server key or issue a new invitation.')
         payload = {'sender': {'email': message.sender_email, 'name': message.sender_name},
             'to': [{'email': message.recipient_email}], 'subject': message.subject,
-            'htmlContent': message.html_content, 'textContent': message.text_content,
+            'htmlContent': html, 'textContent': text,
             'headers': {'idempotencyKey': str(message.pk), 'X-Mailin-custom': f'munc-message:{message.pk}', **(headers or {})},
             'tags': ['munc', message.message_type[:50]]}
         try:

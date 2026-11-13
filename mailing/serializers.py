@@ -75,6 +75,17 @@ class TemplateSerializer(ContentMixin, serializers.ModelSerializer):
             raise serializers.ValidationError({'event': 'Only a Super Admin may edit global templates.'})
         attrs = super().validate(attrs)
         key = attrs.get('template_key', self.instance.template_key if self.instance else '')
+        if key.startswith('membership_') and event:
+            raise serializers.ValidationError({'event': 'Membership templates use global scope.'})
+        if key in {'membership_invitation', 'membership_password_reset', 'membership_email_verification'}:
+            import re
+            for field in ('html_content', 'text_content'):
+                value = attrs.get(field, getattr(self.instance, field, '') if self.instance else '')
+                if not re.search(r'{{\s*event_url\s*}}', value):
+                    raise serializers.ValidationError({field: 'Keep the private {{event_url}} link in both email bodies.'})
+            subject = attrs.get('subject', self.instance.subject if self.instance else '')
+            if re.search(r'{{\s*event_url\s*}}', subject):
+                raise serializers.ValidationError({'subject': 'Private links must not appear in the email subject.'})
         duplicate = EmailTemplate.objects.filter(event=event, template_key=key)
         if self.instance: duplicate = duplicate.exclude(pk=self.instance.pk)
         if duplicate.exists(): raise serializers.ValidationError({'template_key': 'This event/global scope already has a template with this key.'})
