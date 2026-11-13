@@ -34,4 +34,22 @@ describe('session API client', () => {
         const { api } = await import('./api');
         await expect(api.session()).rejects.toThrow(/API returned an unexpected response/);
     });
+    it('loads private member photos through the centralized proxy with session cookies', async () => {
+        fetch.mockImplementation(async () => new Response('test-image', { headers: { 'content-type': 'image/png' } }));
+        const { memberPhoto } = await import('./api');
+        const controller = new AbortController();
+        const photo = await memberPhoto(undefined, { signal: controller.signal });
+        expect(photo).toBeTruthy();
+        expect(fetch).toHaveBeenCalledWith('/api/membership/photo/', expect.objectContaining({ credentials: 'include', cache: 'no-store', redirect: 'error', signal: controller.signal }));
+        await memberPhoto('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+        expect(fetch.mock.lastCall[0]).toBe('/api/admin/members/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/photo/');
+    });
+    it('handles an absent profile image without accepting an HTML SPA fallback', async () => {
+        fetch.mockResolvedValueOnce(new Response(null, { status: 404 }))
+            .mockResolvedValueOnce(new Response('<html>fallback</html>', { headers: { 'content-type': 'text/html' } }));
+        const { memberPhoto } = await import('./api');
+        expect(await memberPhoto()).toBeNull();
+        await expect(memberPhoto()).rejects.toThrow('Unexpected photo response.');
+    });
+
 });

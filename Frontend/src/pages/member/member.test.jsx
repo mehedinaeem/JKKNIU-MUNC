@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import MemberPortal from './MemberPortal';
 import { api } from '../../services/api';
-vi.mock('../../services/api', () => ({ api: { post: vi.fn(), get: vi.fn(), publicGet: vi.fn(), memberLogin: vi.fn() }, apiUrl: path => `/api${path}` }));
+vi.mock('../../services/api', () => ({ api: { post: vi.fn(), get: vi.fn(), publicGet: vi.fn(), memberLogin: vi.fn() }, memberPhoto: vi.fn().mockResolvedValue(null) }));
 function show(mode) { return render(<MemoryRouter><MemberPortal mode={mode} /></MemoryRouter>); }
 beforeEach(() => { vi.clearAllMocks(); window.history.replaceState(null, '', '/'); });
 describe('membership portal', () => {

@@ -134,3 +134,16 @@ export async function privateImage(path, { signal } = {}) {
     if (!['image/png', 'image/jpeg'].includes(response.headers.get('content-type'))) throw new ApiError(0, {}, 'Unexpected image response.');
     return response.blob();
 }
+
+// Private member photos share the same API base, cookie and cache policy as JSON calls.
+export async function memberPhoto(memberId, { signal } = {}) {
+    if (memberId !== undefined && !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(memberId)) throw new Error('Invalid member identifier.');
+    const path = memberId === undefined ? '/membership/photo/' : `/admin/members/${memberId}/photo/`;
+    let response;
+    try { response = await fetch(apiUrl(path), { credentials: 'include', cache: 'no-store', redirect: 'error', signal, headers: { Accept: 'image/png, image/jpeg, application/json' } }); }
+    catch (error) { if (error.name === 'AbortError') throw error; throw new ApiError(0, {}, 'Photo could not connect.'); }
+    if (response.status === 404) return null;
+    if (!response.ok) throw new ApiError(response.status, {}, 'Photo is unavailable.');
+    if (!['image/png', 'image/jpeg'].includes(response.headers.get('content-type')?.split(';')[0])) throw new ApiError(0, {}, 'Unexpected photo response.');
+    return response.blob();
+}

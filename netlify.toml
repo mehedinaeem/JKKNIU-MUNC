@@ -14,8 +14,15 @@
 [build.environment]
   # Node version to use
   NODE_VERSION = "22"
+  VITE_API_BASE_URL = "/api"
 
-# Handle SPA routing - redirect all routes to index.html
+# Route API requests before the React SPA fallback. Keep redirects in this file.
+[[redirects]]
+  from = "/api/*"
+  to = "https://jkkniu-munc-api-d218cff97c80.herokuapp.com/api/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

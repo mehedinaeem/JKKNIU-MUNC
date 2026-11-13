@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes } from 'react-router-dom';
-import { api, apiUrl, downloadPrivate } from '../../services/api';
+import { api, memberPhoto, downloadPrivate } from '../../services/api';
 import useAdminAuth from '../../hooks/useAdminAuth';
 import { Button, Control, Dialog, EmptyState, ErrorNotice, Loading, Notice, PageHeader, StatusBadge } from '../../components/admin/AdminUI';
 
@@ -64,7 +64,7 @@ function MemberPhoto({ id }) {
     const [url, setUrl] = useState('');
     useEffect(() => {
         const controller = new AbortController(); let live = true; let objectUrl;
-        fetch(apiUrl(`/admin/members/${id}/photo/`), { credentials: 'include', cache: 'no-store', redirect: 'error', signal: controller.signal }).then(response => response.ok ? response.blob() : null).then(blob => {
+        memberPhoto(id, { signal: controller.signal }).then(blob => {
             if (live && blob) { objectUrl = URL.createObjectURL(blob); setUrl(objectUrl); }
         }).catch(() => {});
         return () => { live = false; controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };

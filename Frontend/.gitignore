@@ -28,3 +28,6 @@ test-results/
 .env
 .env.*
 !.env.example
+
+# Safe public production routing configuration; contains no credentials.
+!.env.production

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MembershipApplicationForm from './MembershipApplicationForm';
-import { api, apiUrl } from '../../services/api';
+import { api, memberPhoto } from '../../services/api';
 import { Button, Control, ErrorNotice, Loading, Notice } from '../../components/admin/AdminUI';
 import '../../components/admin/admin.css';
 
@@ -45,7 +45,7 @@ export default function MemberPortal({ mode = 'join' }) {
         if (!protectedPage) return;
         let live = true; let objectUrl;
         const controller = new AbortController();
-        fetch(apiUrl('/membership/photo/'), { credentials: 'include', cache: 'no-store', redirect: 'error', signal: controller.signal }).then(response => response.ok ? response.blob() : null).then(blob => {
+        memberPhoto(undefined, { signal: controller.signal }).then(blob => {
             if (live && blob) { objectUrl = URL.createObjectURL(blob); setPhoto(objectUrl); }
         }).catch(() => {});
         return () => { live = false; controller.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
